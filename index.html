@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -32,11 +32,379 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        main {
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle-text {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        /* File Upload Section */
+        .upload-section {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover {
+            background-color: #ecf0f1;
+            border-color: #2980b9;
+        }
+
+        .upload-zone.dragover {
+            background-color: #d5e8f7;
+            border-color: #2980b9;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+        }
+
+        .btn-success:hover {
+            background-color: #229954;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* Character Management */
+        .character-management {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .character-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .character-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            gap: 8px;
+        }
+
+        .character-item.special {
+            background-color: #d5d8db;
+            font-style: italic;
+        }
+
+        .character-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .character-name {
+            flex: 1;
+        }
+
+        .character-count {
+            color: #7f8c8d;
+            font-size: 12px;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-left: auto;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .reorder-btn {
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            line-height: 1;
+        }
+
+        .reorder-btn:hover {
+            background-color: #7f8c8d;
+        }
+
+        .reorder-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .action-btn {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .action-btn:hover {
+            opacity: 1;
+        }
+
+        .action-btn.edit {
+            color: #3498db;
+        }
+
+        .action-btn.delete {
+            color: #e74c3c;
+        }
+
+        .add-character {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .add-character input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* Annotation Workspace */
+        .annotation-workspace {
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .progress-bar {
+            background-color: #ecf0f1;
+            height: 30px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            background-color: #27ae60;
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .keyboard-hints {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .keyboard-hints h3 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .shortcuts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .shortcut {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .key {
+            background-color: #495057;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .subtitle-list {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .subtitle-entry {
+            display: grid;
+            grid-template-columns: 80px 180px 1fr 200px 40px;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .subtitle-entry:hover {
+            background-color: #f8f9fa;
+        }
+
+        .subtitle-entry.annotated {
+            background-color: #d4edda;
+        }
+
+        .subtitle-entry.prefilled {
+            background-color: #cce5ff;
+        }
+
+        .subtitle-entry.active {
+            border-left: 5px solid #f39c12;
+            background-color: #fff3cd;
+        }
+
+        .entry-index {
+            color: #6c757d;
+            font-weight: bold;
+        }
+
+        .entry-timestamp {
+            color: #495057;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .entry-text {
+            color: #212529;
+        }
+
+        .entry-character select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .entry-status {
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 20px;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -44,15 +412,948 @@
     <div class="container">
         <header>
             <h1>Subtitle Annotation Tool</h1>
+            <p class="subtitle-text">Tag subtitle lines with character names for analysis and export</p>
         </header>
 
-        <main>
-            <!-- Main content goes here -->
-        </main>
+        <!-- File Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-zone" id="uploadZone">
+                <h2>📁 Load Subtitle File</h2>
+                <p>Drag and drop a .srt or .ass file here, or click to browse</p>
+                <input type="file" id="fileInput" accept=".srt,.ass">
+                <button class="btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            </div>
+        </div>
+
+        <!-- Character Management Section -->
+        <div class="character-management" id="characterManagement">
+            <h2>Character Management</h2>
+            <p id="characterInfo">Review and manage the character list</p>
+
+            <div style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn" onclick="sortCharactersByFrequency()">Sort by Frequency</button>
+                <button class="btn" onclick="exportCharacterList()">Export Character List</button>
+                <button class="btn" onclick="document.getElementById('importCharacterFile').click()">Import Character List</button>
+                <button class="btn btn-danger" onclick="clearGlobalCharacterList()">Clear Global List</button>
+                <input type="file" id="importCharacterFile" accept=".json" style="display: none;" onchange="importCharacterList(event)">
+            </div>
+
+            <div id="characterList" class="character-list"></div>
+
+            <div class="add-character">
+                <input type="text" id="newCharacterInput" placeholder="Add new character...">
+                <button class="btn" onclick="addNewCharacter()">Add</button>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn btn-success" onclick="startAnnotating()">Start Annotating</button>
+                <button class="btn btn-secondary" onclick="resetApp()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Annotation Workspace -->
+        <div class="annotation-workspace" id="annotationWorkspace">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0 / 0 annotated</div>
+            </div>
+
+            <div class="keyboard-hints">
+                <h3>Keyboard Shortcuts</h3>
+                <p style="margin-bottom: 10px; font-size: 14px;">The line with the <strong>orange border</strong> is the active target for keyboard shortcuts.</p>
+                <div class="shortcuts" id="shortcutHints"></div>
+            </div>
+
+            <div class="subtitle-list" id="subtitleList"></div>
+
+            <div class="export-section">
+                <div>
+                    <strong id="exportStats">Ready to export</strong>
+                </div>
+                <div>
+                    <button class="btn" onclick="editCharacters()">Edit Characters</button>
+                    <button class="btn btn-success" onclick="showExportModal()">Export JSON</button>
+                    <button class="btn btn-secondary" onclick="resetApp()">New File</button>
+                    <button class="btn btn-danger" onclick="clearSession()">Clear Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h3>Export Annotations</h3>
+            <p>Choose what to include in the export:</p>
+            <div style="margin: 20px 0;">
+                <label>
+                    <input type="radio" name="exportType" value="annotated" checked> Only annotated lines
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="exportType" value="all"> All lines (including unannotated)
+                </label>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+                <button class="btn btn-success" onclick="exportJSON()">Export</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // JavaScript code goes here
+        // Global state
+        let appState = {
+            filename: '',
+            subtitles: [],
+            characters: [],
+            topCharacters: []
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFileUpload();
+            checkForSavedSession();
+        });
+
+        function setupFileUpload() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadZone.addEventListener('click', () => fileInput.click());
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) handleFileSelect(file);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleFileSelect(file);
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!file.name.match(/\.(srt|ass)$/i)) {
+                alert('Please select a .srt or .ass file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const extension = file.name.split('.').pop().toLowerCase();
+
+                appState.filename = file.name;
+
+                // Check for saved session
+                const savedSessionKey = `subtitle-annotation-${file.name}`;
+                const savedSession = localStorage.getItem(savedSessionKey);
+
+                if (savedSession) {
+                    const loadSaved = confirm(`Found a saved session for "${file.name}". Would you like to restore your progress?`);
+                    if (loadSaved) {
+                        appState = JSON.parse(savedSession);
+                        showCharacterManagement();
+                        return;
+                    }
+                }
+
+                // No saved session or user declined - parse fresh
+                if (extension === 'srt') {
+                    appState.subtitles = parseSRT(content);
+                } else if (extension === 'ass') {
+                    appState.subtitles = parseASS(content);
+                }
+
+                extractCharacters();
+                showCharacterManagement();
+            };
+            reader.readAsText(file);
+        }
+
+        function parseSRT(content) {
+            const subtitles = [];
+            const entries = content.split(/\n\s*\n/).filter(e => e.trim());
+
+            entries.forEach(entry => {
+                const lines = entry.split('\n');
+                if (lines.length < 3) return;
+
+                const index = parseInt(lines[0]);
+                const timestamp = lines[1];
+                const text = lines.slice(2).join('\n');
+
+                // Extract character name from Japanese markers （）
+                // Match anywhere in text, not just at start (handles 〈（Name）...〉 format)
+                const characterMatch = text.match(/\uff08([^\uff09]+)\uff09/);
+                let character = null;
+                let isPrefilled = false;
+
+                if (characterMatch) {
+                    character = characterMatch[1];
+                    isPrefilled = true;
+                }
+
+                subtitles.push({
+                    index,
+                    timestamp,
+                    text,
+                    character,
+                    isPrefilled
+                });
+            });
+
+            return subtitles;
+        }
+
+        function parseASS(content) {
+            const subtitles = [];
+            const lines = content.split('\n');
+            let inEvents = false;
+            let index = 0;
+
+            for (let line of lines) {
+                if (line.includes('[Events]')) {
+                    inEvents = true;
+                    continue;
+                }
+
+                if (inEvents && line.startsWith('Dialogue:')) {
+                    // Dialogue: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+                    const parts = line.substring(9).split(',');
+
+                    if (parts.length >= 10) {
+                        const start = parts[1].trim();
+                        const end = parts[2].trim();
+                        const name = parts[4].trim();
+                        const text = parts.slice(9).join(',').replace(/\\N/g, ' ').trim();
+
+                        let character = null;
+                        let isPrefilled = false;
+
+                        // Try to get character from Name field first (English ASS)
+                        if (name && name !== '' && !isNonCharacterName(name)) {
+                            character = name;
+                            isPrefilled = true;
+                        } else {
+                            // Try to extract from text markers (Japanese ASS)
+                            // Match anywhere in text, not just at start (handles 〈（Name）...〉 format)
+                            const characterMatch = text.match(/\uff08([^\uff09]+)\uff09/);
+                            if (characterMatch) {
+                                character = characterMatch[1];
+                                isPrefilled = true;
+                            }
+                        }
+
+                        subtitles.push({
+                            index: index++,
+                            timestamp: `${start} --> ${end}`,
+                            text,
+                            character,
+                            isPrefilled
+                        });
+                    }
+                }
+            }
+
+            return subtitles;
+        }
+
+        function isNonCharacterName(name) {
+            // Filter out common non-character entries
+            const nonCharacterPatterns = [
+                /^signs/i,
+                /^default/i,
+                /^style/i,
+                '足音', 'チャイム', 'ドアが開く', 'シャッターを押す',
+                '♪', '・', '〈', '〉'
+            ];
+
+            return nonCharacterPatterns.some(pattern => {
+                if (typeof pattern === 'string') {
+                    return name.includes(pattern);
+                } else {
+                    return pattern.test(name);
+                }
+            });
+        }
+
+        function extractCharacters() {
+            const characterCounts = {};
+
+            // Count characters from all subtitles
+            appState.subtitles.forEach(sub => {
+                if (sub.character && !isNonCharacterName(sub.character)) {
+                    characterCounts[sub.character] = (characterCounts[sub.character] || 0) + 1;
+                }
+            });
+
+            // Check for global character list in localStorage
+            const globalListStr = localStorage.getItem('global-character-list');
+            let characters = [];
+            let useGlobalList = false;
+
+            if (globalListStr) {
+                try {
+                    const globalList = JSON.parse(globalListStr);
+                    const charCount = globalList.filter(c => c.name !== '(Other)').length;
+
+                    // Ask user if they want to use the global list
+                    const choice = confirm(
+                        `Found a saved global character list with ${charCount} characters.\n\n` +
+                        `Click OK to use this list (maintains order across files).\n` +
+                        `Click Cancel to use only characters from this file.`
+                    );
+
+                    if (choice) {
+                        useGlobalList = true;
+                        // Use global list order, but update counts from current file
+                        characters = globalList.map(char => ({
+                            name: char.name,
+                            count: characterCounts[char.name] || 0,
+                            enabled: char.enabled !== false
+                        }));
+
+                        // Add any new characters from current file not in global list
+                        Object.keys(characterCounts).forEach(name => {
+                            if (!characters.some(c => c.name === name)) {
+                                characters.push({
+                                    name,
+                                    count: characterCounts[name],
+                                    enabled: true
+                                });
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error loading global character list:', err);
+                }
+            }
+
+            if (!useGlobalList) {
+                // No global list or user declined - sort by frequency
+                characters = Object.entries(characterCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([name, count]) => ({ name, count, enabled: true }));
+            }
+
+            // Always ensure "(Other)" is first
+            const otherIndex = characters.findIndex(c => c.name === '(Other)');
+            if (otherIndex === -1) {
+                characters.unshift({ name: '(Other)', count: 0, enabled: true });
+            } else if (otherIndex !== 0) {
+                const other = characters.splice(otherIndex, 1)[0];
+                characters.unshift(other);
+            }
+
+            appState.characters = characters;
+            updateTopCharacters();
+        }
+
+        function clearGlobalCharacterList() {
+            const confirm = window.confirm(
+                'Are you sure you want to clear the global character list?\n\n' +
+                'This will remove the saved character order that applies to new files.\n' +
+                'The current file\'s character list will not be affected.'
+            );
+
+            if (confirm) {
+                localStorage.removeItem('global-character-list');
+                alert('Global character list cleared.');
+            }
+        }
+
+        function updateTopCharacters() {
+            // Exclude "(Other)" from 1-9 hotkeys (it's always on 0)
+            appState.topCharacters = appState.characters
+                .filter(c => c.enabled && c.name !== '(Other)')
+                .slice(0, 9)
+                .map(c => c.name);
+        }
+
+        function showCharacterManagement() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('characterManagement').style.display = 'block';
+
+            const totalLines = appState.subtitles.length;
+            const prefilledLines = appState.subtitles.filter(s => s.isPrefilled).length;
+
+            let infoText = `Loaded ${totalLines} subtitle entries. `;
+            if (appState.characters.length > 0) {
+                infoText += `Found ${appState.characters.length} characters (${prefilledLines} lines pre-annotated).`;
+            } else {
+                infoText += 'No characters detected. You can add them manually below.';
+            }
+
+            document.getElementById('characterInfo').textContent = infoText;
+            renderCharacterList();
+        }
+
+        function renderCharacterList() {
+            const container = document.getElementById('characterList');
+
+            // Force a complete DOM clear and rebuild
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            if (appState.characters.length === 0) {
+                const emptyMsg = document.createElement('p');
+                emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; color: #6c757d;';
+                emptyMsg.textContent = 'No characters found. Add characters using the input below.';
+                container.appendChild(emptyMsg);
+                return;
+            }
+
+            appState.characters.forEach((char, idx) => {
+                const item = document.createElement('div');
+                item.className = 'character-item';
+
+                const isOther = char.name === '(Other)';
+                const isFirst = idx === 0;
+                const isLast = idx === appState.characters.length - 1;
+
+                // Mark "(Other)" as special with darker background
+                if (isOther) {
+                    item.classList.add('special');
+                }
+
+                // Disable both arrows for "(Other)" since it's locked to first position
+                const disableLeft = isFirst || isOther;
+                const disableRight = isLast || isOther;
+
+                item.innerHTML = `
+                    <input type="checkbox" id="char-${idx}" ${char.enabled ? 'checked' : ''}
+                           onchange="toggleCharacter(${idx})">
+                    <label for="char-${idx}" class="character-name">${char.name}</label>
+                    <span class="character-count">(${char.count})</span>
+                    <div class="button-container">
+                        <div class="button-row">
+                            <button class="reorder-btn" onclick="moveCharacter(${idx}, -1)" ${disableLeft ? 'disabled' : ''} title="Move left">◀</button>
+                            <button class="reorder-btn" onclick="moveCharacter(${idx}, 1)" ${disableRight ? 'disabled' : ''} title="Move right">▶</button>
+                        </div>
+                        <div class="button-row">
+                            <button class="action-btn edit" onclick="editCharacterName(${idx})" title="Edit name">✏️</button>
+                            <button class="action-btn delete" onclick="deleteCharacter(${idx})" title="Delete character" ${isOther ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''}>🗑️</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleCharacter(index) {
+            appState.characters[index].enabled = !appState.characters[index].enabled;
+            updateTopCharacters();
+        }
+
+        function addNewCharacter() {
+            const input = document.getElementById('newCharacterInput');
+            const name = input.value.trim();
+
+            if (!name) {
+                alert('Please enter a character name');
+                return;
+            }
+
+            if (appState.characters.some(c => c.name === name)) {
+                alert('Character already exists');
+                return;
+            }
+
+            appState.characters.push({ name, count: 0, enabled: true });
+            input.value = '';
+            updateTopCharacters();
+            renderCharacterList();
+        }
+
+        function moveCharacter(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= appState.characters.length) return;
+
+            // Swap characters
+            const temp = appState.characters[index];
+            appState.characters[index] = appState.characters[newIndex];
+            appState.characters[newIndex] = temp;
+
+            updateTopCharacters();
+            renderCharacterList();
+            saveToLocalStorage();
+        }
+
+        function editCharacterName(index) {
+            const char = appState.characters[index];
+            const newName = prompt(`Edit character name:`, char.name);
+
+            if (!newName || newName.trim() === '') return; // User cancelled or empty
+            if (newName === char.name) return; // No change
+
+            // Check if new name already exists
+            if (appState.characters.some(c => c.name === newName.trim())) {
+                alert('A character with that name already exists.');
+                return;
+            }
+
+            // Update the character name
+            appState.characters[index].name = newName.trim();
+
+            updateTopCharacters();
+            renderCharacterList();
+            saveToLocalStorage();
+        }
+
+        function deleteCharacter(index) {
+            const char = appState.characters[index];
+
+            // Prevent deleting "(Other)"
+            if (char.name === '(Other)') {
+                alert('Cannot delete the special "(Other)" category.');
+                return;
+            }
+
+            const confirmDelete = confirm(`Delete character "${char.name}"?\n\nThis will remove it from the list but won't affect already-annotated lines.`);
+            if (!confirmDelete) return;
+
+            // Remove the character
+            appState.characters.splice(index, 1);
+
+            updateTopCharacters();
+            renderCharacterList();
+            saveToLocalStorage();
+        }
+
+        function sortCharactersByFrequency() {
+            // Count how many characters have non-zero counts
+            const withCounts = appState.characters.filter(c => c.count > 0 && c.name !== '(Other)').length;
+
+            if (withCounts === 0) {
+                alert('No characters have dialogue counts to sort by.\n\nCounts are based on pre-filled characters from the subtitle file.');
+                return;
+            }
+
+            // Separate (Other) from the rest
+            const otherIndex = appState.characters.findIndex(c => c.name === '(Other)');
+            let other = null;
+            if (otherIndex !== -1) {
+                other = appState.characters.splice(otherIndex, 1)[0];
+            }
+
+            // Sort remaining characters by count (descending), then alphabetically for ties
+            appState.characters.sort((a, b) => {
+                if (b.count !== a.count) {
+                    return b.count - a.count;
+                }
+                return a.name.localeCompare(b.name);
+            });
+
+            // Put (Other) back at the beginning
+            if (other) {
+                appState.characters.unshift(other);
+            }
+
+            updateTopCharacters();
+            renderCharacterList();
+            saveToLocalStorage();
+        }
+
+        function exportCharacterList() {
+            const defaultName = appState.filename
+                ? appState.filename.replace(/\.(srt|ass)$/i, '-characters.json')
+                : 'character-list.json';
+
+            const filename = prompt('Enter filename for character list:', defaultName);
+            if (!filename) return; // User cancelled
+
+            const characterList = appState.characters.map(c => ({
+                name: c.name,
+                enabled: c.enabled
+            }));
+
+            const blob = new Blob([JSON.stringify(characterList, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename.endsWith('.json') ? filename : filename + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // Also save to localStorage as global list
+            localStorage.setItem('global-character-list', JSON.stringify(characterList));
+        }
+
+        function importCharacterList(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+
+                    if (!Array.isArray(imported)) {
+                        alert('Invalid character list format');
+                        return;
+                    }
+
+                    // Merge imported list with existing characters
+                    imported.forEach(importedChar => {
+                        const existing = appState.characters.find(c => c.name === importedChar.name);
+                        if (!existing) {
+                            // Add new character with count 0
+                            appState.characters.push({
+                                name: importedChar.name,
+                                count: 0,
+                                enabled: importedChar.enabled !== false
+                            });
+                        }
+                    });
+
+                    // Reorder to match imported list (put imported characters first, in order)
+                    const reordered = [];
+                    imported.forEach(importedChar => {
+                        const char = appState.characters.find(c => c.name === importedChar.name);
+                        if (char) {
+                            reordered.push(char);
+                        }
+                    });
+                    // Add any characters not in the imported list
+                    appState.characters.forEach(char => {
+                        if (!reordered.includes(char)) {
+                            reordered.push(char);
+                        }
+                    });
+                    appState.characters = reordered;
+
+                    updateTopCharacters();
+                    renderCharacterList();
+                    saveToLocalStorage();
+
+                    alert('Character list imported successfully!');
+                } catch (err) {
+                    alert('Error importing character list: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        function editCharacters() {
+            document.getElementById('annotationWorkspace').style.display = 'none';
+            document.getElementById('characterManagement').style.display = 'block';
+            renderCharacterList();
+        }
+
+        function startAnnotating() {
+            if (appState.characters.filter(c => c.enabled).length === 0) {
+                alert('Please add at least one character before annotating');
+                return;
+            }
+
+            document.getElementById('characterManagement').style.display = 'none';
+            document.getElementById('annotationWorkspace').style.display = 'block';
+
+            renderAnnotationWorkspace();
+        }
+
+        function renderAnnotationWorkspace() {
+            renderKeyboardHints();
+            renderSubtitleList();
+            updateProgress();
+            // Highlight the first unannotated line for keyboard shortcuts
+            scrollToNextUnannotated();
+        }
+
+        function renderKeyboardHints() {
+            const container = document.getElementById('shortcutHints');
+            const hints = appState.topCharacters.map((char, idx) =>
+                `<div class="shortcut"><span class="key">${idx + 1}</span> ${char}</div>`
+            );
+            hints.push('<div class="shortcut"><span class="key">0</span> (Other)</div>');
+            hints.push('<div class="shortcut"><span class="key">S</span> Jump to first unannotated</div>');
+            hints.push('<div class="shortcut"><span class="key">J/K</span> Navigate up/down</div>');
+            container.innerHTML = hints.join('');
+        }
+
+        function renderSubtitleList() {
+            const container = document.getElementById('subtitleList');
+            container.innerHTML = '';
+
+            const enabledCharacters = appState.characters.filter(c => c.enabled);
+
+            appState.subtitles.forEach((sub, idx) => {
+                const entry = document.createElement('div');
+                entry.className = 'subtitle-entry';
+                if (sub.character) {
+                    entry.classList.add(sub.isPrefilled ? 'prefilled' : 'annotated');
+                }
+                entry.dataset.index = idx;
+
+                const select = document.createElement('select');
+                select.innerHTML = '<option value="">-- Select --</option>';
+                enabledCharacters.forEach(char => {
+                    const option = document.createElement('option');
+                    option.value = char.name;
+                    option.textContent = char.name;
+                    if (sub.character === char.name) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+                select.addEventListener('change', (e) => assignCharacter(idx, e.target.value));
+
+                entry.innerHTML = `
+                    <div class="entry-index">#${sub.index + 1}</div>
+                    <div class="entry-timestamp">${sub.timestamp}</div>
+                    <div class="entry-text">${sub.text}</div>
+                    <div class="entry-character"></div>
+                    <div class="entry-status">${sub.character ? '✓' : ''}</div>
+                `;
+
+                entry.querySelector('.entry-character').appendChild(select);
+                container.appendChild(entry);
+            });
+
+            // Add keyboard listener (remove first to prevent duplicates)
+            document.removeEventListener('keydown', handleKeyPress);
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function handleKeyPress(e) {
+            // Only handle if not in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+            const key = e.key.toLowerCase();
+
+            // Check for '0' key - always assign (Other)
+            if (key === '0') {
+                e.preventDefault();
+                assignToActiveLine('(Other)');
+                return;
+            }
+
+            // Check for number keys 1-9 - assign to active line
+            if (key >= '1' && key <= '9') {
+                e.preventDefault();
+                const charIndex = parseInt(key) - 1;
+                if (charIndex < appState.topCharacters.length) {
+                    const character = appState.topCharacters[charIndex];
+                    assignToActiveLine(character);
+                }
+                return;
+            }
+
+            // Check for 's' key (skip) - move to next unannotated line
+            if (key === 's') {
+                e.preventDefault();
+                scrollToNextUnannotated();
+                return;
+            }
+
+            // Check for j/k or arrow keys for navigation
+            if (key === 'j' || key === 'arrowdown') {
+                e.preventDefault();
+                navigateLines(1);
+                return;
+            }
+            if (key === 'k' || key === 'arrowup') {
+                e.preventDefault();
+                navigateLines(-1);
+                return;
+            }
+        }
+
+        function navigateLines(direction) {
+            const currentActive = document.querySelector('.subtitle-entry.active');
+            let currentIndex = currentActive ? parseInt(currentActive.dataset.index) : -1;
+
+            const nextIndex = currentIndex + direction;
+            if (nextIndex >= 0 && nextIndex < appState.subtitles.length) {
+                document.querySelectorAll('.subtitle-entry').forEach(entry => {
+                    entry.classList.remove('active');
+                });
+
+                const nextElement = document.querySelector(`[data-index="${nextIndex}"]`);
+                if (nextElement) {
+                    nextElement.classList.add('active');
+                    nextElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        function assignToActiveLine(character) {
+            // Find the currently active line (highlighted with orange border)
+            const activeEntry = document.querySelector('.subtitle-entry.active');
+            if (activeEntry) {
+                const index = parseInt(activeEntry.dataset.index);
+                assignCharacter(index, character);
+                // Move to next unannotated line after assignment
+                scrollToNextUnannotated();
+            } else {
+                // No active line - fall back to first unannotated
+                assignToFirstUnannotated(character);
+            }
+        }
+
+        function assignToFirstUnannotated(character) {
+            const firstUnannotated = appState.subtitles.findIndex(s => !s.character);
+            if (firstUnannotated !== -1) {
+                assignCharacter(firstUnannotated, character);
+                scrollToNextUnannotated();
+            }
+        }
+
+        function scrollToNextUnannotated() {
+            // Find the first unannotated line
+            const firstUnannotated = appState.subtitles.findIndex(s => !s.character);
+
+            // Update active highlighting
+            document.querySelectorAll('.subtitle-entry').forEach(entry => {
+                entry.classList.remove('active');
+            });
+
+            if (firstUnannotated !== -1) {
+                const element = document.querySelector(`[data-index="${firstUnannotated}"]`);
+                if (element) {
+                    element.classList.add('active');
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        function assignCharacter(index, character) {
+            appState.subtitles[index].character = character || null;
+            appState.subtitles[index].isPrefilled = false;
+
+            saveToLocalStorage();
+            updateProgress();
+
+            // Update the visual representation
+            const entry = document.querySelector(`[data-index="${index}"]`);
+            if (entry) {
+                entry.classList.remove('annotated', 'prefilled', 'active');
+                if (character) {
+                    entry.classList.add('annotated');
+                }
+                entry.querySelector('.entry-status').textContent = character ? '✓' : '';
+
+                // Update the dropdown value
+                const select = entry.querySelector('select');
+                if (select) {
+                    select.value = character || '';
+                }
+            }
+        }
+
+        function updateProgress() {
+            const total = appState.subtitles.length;
+            const annotated = appState.subtitles.filter(s => s.character).length;
+            const percentage = total > 0 ? (annotated / total) * 100 : 0;
+
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = percentage + '%';
+            progressFill.textContent = `${annotated} / ${total} annotated`;
+
+            const exportStats = document.getElementById('exportStats');
+            exportStats.textContent = `${annotated} lines annotated, ${total - annotated} remaining`;
+        }
+
+        function saveToLocalStorage() {
+            const key = `subtitle-annotation-${appState.filename}`;
+            localStorage.setItem(key, JSON.stringify(appState));
+        }
+
+        function checkForSavedSession() {
+            // Check if there are any saved sessions in localStorage
+            const savedKeys = Object.keys(localStorage).filter(key => key.startsWith('subtitle-annotation-'));
+
+            if (savedKeys.length > 0) {
+                const message = `Found ${savedKeys.length} saved session(s). Would you like to see them?`;
+                if (confirm(message)) {
+                    const sessionList = savedKeys.map(key => {
+                        const filename = key.replace('subtitle-annotation-', '');
+                        return filename;
+                    }).join('\n- ');
+
+                    alert(`Saved sessions:\n- ${sessionList}\n\nLoad a file with the same name to restore your progress.`);
+                }
+            }
+        }
+
+        function showExportModal() {
+            document.getElementById('exportModal').classList.add('show');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('show');
+        }
+
+        function exportJSON() {
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+
+            let dataToExport = appState.subtitles;
+            if (exportType === 'annotated') {
+                dataToExport = appState.subtitles.filter(s => s.character);
+            }
+
+            const jsonData = dataToExport.map(sub => ({
+                timestamp: sub.timestamp,
+                character: sub.character || null,
+                dialogue: sub.text
+            }));
+
+            const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = appState.filename.replace(/\.(srt|ass)$/i, '-annotated.json');
+            a.click();
+            URL.revokeObjectURL(url);
+
+            closeExportModal();
+        }
+
+        function clearSession() {
+            if (confirm('Are you sure you want to clear all annotations? This cannot be undone.')) {
+                const key = `subtitle-annotation-${appState.filename}`;
+                localStorage.removeItem(key);
+                appState.subtitles.forEach(sub => {
+                    if (!sub.isPrefilled) {
+                        sub.character = null;
+                    }
+                });
+                renderSubtitleList();
+                updateProgress();
+            }
+        }
+
+        function resetApp() {
+            if (confirm('Are you sure you want to start over? Unsaved progress will be lost.')) {
+                appState = {
+                    filename: '',
+                    subtitles: [],
+                    characters: [],
+                    topCharacters: []
+                };
+
+                document.getElementById('uploadSection').style.display = 'block';
+                document.getElementById('characterManagement').style.display = 'none';
+                document.getElementById('annotationWorkspace').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+            }
+        }
     </script>
 </body>
 </html>
