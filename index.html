@@ -459,6 +459,15 @@
                 <div class="progress-fill" id="progressFill">0 / 0 annotated</div>
             </div>
 
+            <div style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
+                <label for="characterFilter" style="font-weight: 600;">Filter:</label>
+                <select id="characterFilter" onchange="handleFilterChange()" style="padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; flex: 1; max-width: 300px;">
+                    <option value="all">All lines</option>
+                    <option value="unannotated">Unannotated only</option>
+                </select>
+                <span id="filterStats" style="color: #6c757d; font-size: 14px;"></span>
+            </div>
+
             <div class="keyboard-hints">
                 <h3>Keyboard Shortcuts</h3>
                 <p style="margin-bottom: 10px; font-size: 14px;">The line with the <strong>orange border</strong> is the active target for keyboard shortcuts.</p>
@@ -552,6 +561,9 @@
 
         // UI state for expandable alias sections (not persisted)
         let aliasExpandedState = {};
+
+        // Filter state for annotation workspace
+        let currentFilter = 'all'; // 'all', 'unannotated', or character name
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', () => {
@@ -935,7 +947,8 @@
                 }
 
                 // Disable both arrows for "(Other)" since it's locked to first position
-                const disableLeft = isFirst || isOther;
+                // Also disable left arrow for first real character (can't move left past "(Other)")
+                const disableLeft = actualIdx <= 1 || isOther;
                 const disableRight = isLast || isOther;
 
                 item.innerHTML = `
@@ -952,7 +965,7 @@
                             <button class="reorder-btn" onclick="moveCharacter(${actualIdx}, 1)" ${disableRight ? 'disabled' : ''} title="Move right">▶</button>
                         </div>
                         <div class="button-row">
-                            <button class="action-btn edit" onclick="editCharacterName(${actualIdx})" title="Edit name">✏️</button>
+                            <button class="action-btn edit" onclick="editCharacterName(${actualIdx})" title="Edit name" ${isOther ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''}>✏️</button>
                             <button class="action-btn delete" onclick="deleteCharacter(${actualIdx})" title="Delete character" ${isOther ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''}>🗑️</button>
                         </div>
                     </div>
@@ -1162,6 +1175,7 @@
 
             // Update annotation workspace if visible
             if (document.getElementById('annotationWorkspace').style.display !== 'none') {
+                populateCharacterFilter();
                 renderSubtitleList();
                 updateProgress();
             }
@@ -1206,6 +1220,7 @@
 
             // Update annotation workspace if visible
             if (document.getElementById('annotationWorkspace').style.display !== 'none') {
+                populateCharacterFilter();
                 renderSubtitleList();
                 updateProgress();
             }
@@ -1275,6 +1290,7 @@
 
             // Update progress display
             if (document.getElementById('annotationWorkspace').style.display !== 'none') {
+                populateCharacterFilter();
                 renderSubtitleList();
                 updateProgress();
             }
@@ -1532,6 +1548,11 @@
                 return;
             }
 
+            // Reset filter when starting annotation (unless already in annotation mode)
+            if (document.getElementById('annotationWorkspace').style.display === 'none') {
+                currentFilter = 'all';
+            }
+
             document.getElementById('characterManagement').style.display = 'none';
             document.getElementById('annotationWorkspace').style.display = 'block';
 
@@ -1539,11 +1560,81 @@
         }
 
         function renderAnnotationWorkspace() {
+            populateCharacterFilter();
             renderKeyboardHints();
             renderSubtitleList();
             updateProgress();
             // Highlight the first unannotated line for keyboard shortcuts
             scrollToNextUnannotated();
+        }
+
+        function populateCharacterFilter() {
+            const filterSelect = document.getElementById('characterFilter');
+
+            // Keep the current selection
+            const currentValue = filterSelect.value;
+
+            // Clear existing character options (keep "All" and "Unannotated")
+            while (filterSelect.options.length > 2) {
+                filterSelect.remove(2);
+            }
+
+            // Add separator
+            const separator = document.createElement('option');
+            separator.disabled = true;
+            separator.textContent = '─────────';
+            filterSelect.appendChild(separator);
+
+            // Add character options (only non-alias characters)
+            const characters = appState.characters.filter(c => !c.isAlias && c.name !== '(Other)');
+            characters.forEach(char => {
+                const option = document.createElement('option');
+                option.value = char.name;
+                const count = appState.subtitles.filter(s => s.character === char.name).length;
+                option.textContent = `${char.name} (${count} lines)`;
+                filterSelect.appendChild(option);
+            });
+
+            // Add "(Other)" at the end
+            const otherChar = appState.characters.find(c => c.name === '(Other)');
+            if (otherChar) {
+                const option = document.createElement('option');
+                option.value = '(Other)';
+                const count = appState.subtitles.filter(s => s.character === '(Other)').length;
+                option.textContent = `(Other) (${count} lines)`;
+                filterSelect.appendChild(option);
+            }
+
+            // Restore selection if it still exists
+            if (currentValue && Array.from(filterSelect.options).some(opt => opt.value === currentValue)) {
+                filterSelect.value = currentValue;
+            } else {
+                filterSelect.value = 'all';
+                currentFilter = 'all';
+            }
+        }
+
+        function handleFilterChange() {
+            const filterSelect = document.getElementById('characterFilter');
+            currentFilter = filterSelect.value;
+            renderSubtitleList();
+            updateFilterStats();
+        }
+
+        function updateFilterStats() {
+            const statsEl = document.getElementById('filterStats');
+            let filteredCount;
+
+            if (currentFilter === 'all') {
+                filteredCount = appState.subtitles.length;
+                statsEl.textContent = `Showing all ${filteredCount} lines`;
+            } else if (currentFilter === 'unannotated') {
+                filteredCount = appState.subtitles.filter(s => !s.character).length;
+                statsEl.textContent = `Showing ${filteredCount} unannotated lines`;
+            } else {
+                filteredCount = appState.subtitles.filter(s => s.character === currentFilter).length;
+                statsEl.textContent = `Showing ${filteredCount} lines`;
+            }
         }
 
         function renderKeyboardHints() {
@@ -1561,10 +1652,22 @@
             const container = document.getElementById('subtitleList');
             container.innerHTML = '';
 
+            // Apply filter
+            let filteredSubtitles = appState.subtitles;
+            if (currentFilter === 'unannotated') {
+                filteredSubtitles = appState.subtitles.filter(s => !s.character);
+            } else if (currentFilter !== 'all') {
+                filteredSubtitles = appState.subtitles.filter(s => s.character === currentFilter);
+            }
+
+            // Update filter stats
+            updateFilterStats();
+
             // Only show non-alias characters in dropdown
             const enabledCharacters = appState.characters.filter(c => !c.isAlias);
 
-            appState.subtitles.forEach((sub, idx) => {
+            filteredSubtitles.forEach((sub) => {
+                const idx = appState.subtitles.indexOf(sub); // Get original index
                 const entry = document.createElement('div');
                 entry.className = 'subtitle-entry';
                 if (sub.character) {
@@ -1710,6 +1813,7 @@
 
             saveToLocalStorage();
             updateProgress();
+            populateCharacterFilter(); // Update filter counts
 
             // Update the visual representation
             const entry = document.querySelector(`[data-index="${index}"]`);
