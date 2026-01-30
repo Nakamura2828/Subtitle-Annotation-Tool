@@ -613,6 +613,9 @@
                 appState.filename = file.name;
                 updateFilenameDisplay();
 
+                // Reset filter state when loading a new file
+                currentFilter = 'all';
+
                 // Check for saved session
                 const savedSessionKey = `subtitle-annotation-${file.name}`;
                 const savedSession = localStorage.getItem(savedSessionKey);
@@ -886,6 +889,7 @@
 
         function showCharacterManagement() {
             document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('annotationWorkspace').style.display = 'none';
             document.getElementById('characterManagement').style.display = 'block';
 
             const totalLines = appState.subtitles.length;
@@ -1571,8 +1575,8 @@
         function populateCharacterFilter() {
             const filterSelect = document.getElementById('characterFilter');
 
-            // Keep the current selection
-            const currentValue = filterSelect.value;
+            // Use currentFilter variable as source of truth
+            const currentValue = currentFilter;
 
             // Clear existing character options (keep "All" and "Unannotated")
             while (filterSelect.options.length > 2) {
