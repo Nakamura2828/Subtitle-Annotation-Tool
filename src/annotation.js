@@ -293,7 +293,22 @@ function renderSubtitleList() {
         if (appState.sceneBreaks && appState.sceneBreaks.includes(idx)) {
             const sceneBreakDiv = document.createElement('div');
             sceneBreakDiv.className = 'scene-break';
-            sceneBreakDiv.innerHTML = '<hr><span>Scene Break</span>';
+
+            // Disable delete button when filters are active (unclear context)
+            const filtersActive = currentFilter !== 'all' || currentSceneFilter !== 'all';
+            const deleteButtonDisabled = filtersActive ? 'disabled' : '';
+            const deleteButtonTitle = filtersActive
+                ? 'Clear filters to delete scene breaks'
+                : 'Delete scene break';
+
+            sceneBreakDiv.innerHTML = `
+                <hr>
+                <span>Scene Break</span>
+                <button class="scene-break-delete"
+                        onclick="deleteSceneBreak(${idx})"
+                        title="${deleteButtonTitle}"
+                        ${deleteButtonDisabled}>✕</button>
+            `;
             container.appendChild(sceneBreakDiv);
         }
     });

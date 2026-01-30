@@ -344,6 +344,39 @@ h1 {
     top: -10px;
 }
 
+.scene-break-delete {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    padding: 2px 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 10px;
+    position: relative;
+    top: -10px;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.scene-break-delete:hover {
+    color: #c0392b;
+    background-color: rgba(231, 76, 60, 0.1);
+    border-radius: 3px;
+}
+
+.scene-break-delete:active {
+    transform: scale(0.95);
+}
+
+.scene-break-delete:disabled {
+    color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.scene-break-delete:disabled:hover {
+    background: none;
+}
+
 .entry-index {
     color: #6c757d;
     font-weight: bold;

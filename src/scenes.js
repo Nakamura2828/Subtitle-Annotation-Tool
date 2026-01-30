@@ -38,6 +38,32 @@ function insertSceneBreak() {
     console.log(`Scene break inserted after line #${index + 1}`);
 }
 
+function deleteSceneBreak(index) {
+    // Check if scene break exists at this position
+    if (!appState.sceneBreaks.includes(index)) {
+        console.error('No scene break found at this position');
+        return;
+    }
+
+    // Save state for undo
+    saveStateForUndo();
+
+    // Remove scene break from array
+    const breakIndex = appState.sceneBreaks.indexOf(index);
+    appState.sceneBreaks.splice(breakIndex, 1);
+
+    // Save to localStorage
+    saveToLocalStorage();
+
+    // Re-render to remove the scene break
+    renderSubtitleList();
+
+    // Update scene filter counts
+    populateSceneFilter();
+
+    console.log(`Scene break deleted after line #${index + 1}`);
+}
+
 // Helper function to calculate scene ID for a given line index
 function getSceneId(lineIndex) {
     if (!appState.sceneBreaks || appState.sceneBreaks.length === 0) {
