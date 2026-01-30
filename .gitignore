@@ -46,6 +46,7 @@ loras/
 *.key
 secrets.json
 CLAUDE.md
+nextprompt.txt
 
 # Distribution
 dist/

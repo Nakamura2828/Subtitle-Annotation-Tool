@@ -471,7 +471,7 @@
                 </div>
                 <div>
                     <button class="btn" onclick="editCharacters()">Edit Characters</button>
-                    <button class="btn btn-success" onclick="showExportModal()">Export JSON</button>
+                    <button class="btn btn-success" onclick="showExportModal()">Export</button>
                     <button class="btn btn-secondary" onclick="resetApp()">New File</button>
                     <button class="btn btn-danger" onclick="clearSession()">Clear Session</button>
                 </div>
@@ -483,8 +483,20 @@
     <div class="modal" id="exportModal">
         <div class="modal-content">
             <h3>Export Annotations</h3>
-            <p>Choose what to include in the export:</p>
-            <div style="margin: 20px 0;">
+
+            <p><strong>Format:</strong></p>
+            <div style="margin: 10px 0 20px 0;">
+                <label>
+                    <input type="radio" name="exportFormat" value="json" checked> JSON (for LLM consumption)
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="exportFormat" value="csv"> CSV (for spreadsheet analysis)
+                </label>
+            </div>
+
+            <p><strong>Content:</strong></p>
+            <div style="margin: 10px 0 20px 0;">
                 <label>
                     <input type="radio" name="exportType" value="annotated" checked> Only annotated lines
                 </label>
@@ -493,9 +505,10 @@
                     <input type="radio" name="exportType" value="all"> All lines (including unannotated)
                 </label>
             </div>
+
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
-                <button class="btn btn-success" onclick="exportJSON()">Export</button>
+                <button class="btn btn-success" onclick="handleExport()">Export</button>
             </div>
         </div>
     </div>
@@ -1300,6 +1313,15 @@
             document.getElementById('exportModal').classList.remove('show');
         }
 
+        function handleExport() {
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            if (format === 'json') {
+                exportJSON();
+            } else if (format === 'csv') {
+                exportCSV();
+            }
+        }
+
         function exportJSON() {
             const exportType = document.querySelector('input[name="exportType"]:checked').value;
 
@@ -1323,6 +1345,55 @@
             URL.revokeObjectURL(url);
 
             closeExportModal();
+        }
+
+        function exportCSV() {
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+
+            let dataToExport = appState.subtitles;
+            if (exportType === 'annotated') {
+                dataToExport = appState.subtitles.filter(s => s.character);
+            }
+
+            // Build CSV with header row
+            const csvRows = [];
+            csvRows.push('timestamp,character,dialogue');
+
+            // Add data rows
+            dataToExport.forEach(sub => {
+                const timestamp = escapeCSV(sub.timestamp);
+                const character = escapeCSV(sub.character || '');
+                const dialogue = escapeCSV(sub.text);
+                csvRows.push(`${timestamp},${character},${dialogue}`);
+            });
+
+            // Add UTF-8 BOM to ensure Excel properly detects encoding (especially on non-English locales)
+            const BOM = '\uFEFF';
+            const csvContent = BOM + csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = appState.filename.replace(/\.(srt|ass)$/i, '-annotated.csv');
+            a.click();
+            URL.revokeObjectURL(url);
+
+            closeExportModal();
+        }
+
+        function escapeCSV(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            const stringValue = String(value);
+
+            // If the value contains comma, quote, or newline, wrap in quotes and escape internal quotes
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                return '"' + stringValue.replace(/"/g, '""') + '"';
+            }
+
+            return stringValue;
         }
 
         function clearSession() {
