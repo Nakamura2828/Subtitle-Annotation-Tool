@@ -430,6 +430,7 @@
         <div class="character-management" id="characterManagement">
             <h2>Character Management</h2>
             <p id="characterInfo">Review and manage the character list</p>
+            <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">💡 Tip: Use <kbd style="padding: 2px 5px; background: #f5f5f5; border: 1px solid #ccc; border-radius: 3px;">Ctrl+Z</kbd> to undo and <kbd style="padding: 2px 5px; background: #f5f5f5; border: 1px solid #ccc; border-radius: 3px;">Ctrl+Y</kbd> to redo changes</p>
 
             <div style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn" id="mergeBtn" onclick="showMergeModal()" disabled>Merge Characters</button>
@@ -565,6 +566,11 @@
         // Filter state for annotation workspace
         let currentFilter = 'all'; // 'all', 'unannotated', or character name
 
+        // Undo/Redo stacks
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_UNDO_STATES = 50; // Limit stack size to prevent memory issues
+
         // Initialize app
         document.addEventListener('DOMContentLoaded', () => {
             setupFileUpload();
@@ -615,6 +621,10 @@
 
                 // Reset filter state when loading a new file
                 currentFilter = 'all';
+
+                // Clear undo/redo stacks when loading a new file
+                undoStack = [];
+                redoStack = [];
 
                 // Check for saved session
                 const savedSessionKey = `subtitle-annotation-${file.name}`;
@@ -1140,6 +1150,9 @@
                 canonicalName = selectedCharacters[parseInt(canonicalChoice)].name;
             }
 
+            // Save state for undo
+            saveStateForUndo();
+
             // Check for single-character rename vs multi-character merge
             if (selectedCharacters.length === 1) {
                 // Single-character rename: set canonical name and preserve old name as alias
@@ -1204,6 +1217,9 @@
             );
 
             if (!confirmUnmerge) return;
+
+            // Save state for undo
+            saveStateForUndo();
 
             // Remove alias from canonical character
             canonicalChar.aliases.splice(aliasIndex, 1);
@@ -1314,6 +1330,9 @@
                 return;
             }
 
+            // Save state for undo
+            saveStateForUndo();
+
             appState.characters.push({
                 name,
                 canonicalName: name,
@@ -1324,11 +1343,15 @@
             input.value = '';
             updateTopCharacters();
             renderCharacterList();
+            saveToLocalStorage();
         }
 
         function moveCharacter(index, direction) {
             const newIndex = index + direction;
             if (newIndex < 0 || newIndex >= appState.characters.length) return;
+
+            // Save state for undo
+            saveStateForUndo();
 
             // Swap characters
             const temp = appState.characters[index];
@@ -1353,6 +1376,9 @@
                 return;
             }
 
+            // Save state for undo
+            saveStateForUndo();
+
             // Update the character name
             appState.characters[index].name = newName.trim();
 
@@ -1372,6 +1398,9 @@
 
             const confirmDelete = confirm(`Delete character "${char.name}"?\n\nThis will remove it from the list but won't affect already-annotated lines.`);
             if (!confirmDelete) return;
+
+            // Save state for undo
+            saveStateForUndo();
 
             // Remove the character
             appState.characters.splice(index, 1);
@@ -1649,6 +1678,8 @@
             hints.push('<div class="shortcut"><span class="key">0</span> (Other)</div>');
             hints.push('<div class="shortcut"><span class="key">S</span> Jump to first unannotated</div>');
             hints.push('<div class="shortcut"><span class="key">J/K</span> Navigate up/down</div>');
+            hints.push('<div class="shortcut"><span class="key">Ctrl+Z</span> Undo</div>');
+            hints.push('<div class="shortcut"><span class="key">Ctrl+Y</span> Redo</div>');
             container.innerHTML = hints.join('');
         }
 
@@ -1812,6 +1843,9 @@
         }
 
         function assignCharacter(index, character) {
+            // Save state for undo
+            saveStateForUndo();
+
             appState.subtitles[index].character = character || null;
             appState.subtitles[index].isPrefilled = false;
 
@@ -1870,6 +1904,114 @@
                 }
             }
         }
+
+        // Undo/Redo functionality
+        function deepCopyState() {
+            // Deep copy the appState for undo/redo
+            return {
+                filename: appState.filename,
+                subtitles: appState.subtitles.map(sub => ({...sub})),
+                characters: appState.characters.map(char => ({
+                    ...char,
+                    aliases: char.aliases ? [...char.aliases] : []
+                })),
+                topCharacters: [...appState.topCharacters]
+            };
+        }
+
+        function saveStateForUndo() {
+            // Save current state to undo stack
+            undoStack.push(deepCopyState());
+
+            // Limit stack size
+            if (undoStack.length > MAX_UNDO_STATES) {
+                undoStack.shift();
+            }
+
+            // Clear redo stack when new action is performed
+            redoStack = [];
+        }
+
+        function performUndo() {
+            if (undoStack.length === 0) {
+                return false; // Nothing to undo
+            }
+
+            // Save current state to redo stack
+            redoStack.push(deepCopyState());
+
+            // Restore previous state
+            const previousState = undoStack.pop();
+            appState = previousState;
+
+            // Refresh UI
+            refreshCurrentView();
+            saveToLocalStorage();
+
+            return true;
+        }
+
+        function performRedo() {
+            if (redoStack.length === 0) {
+                return false; // Nothing to redo
+            }
+
+            // Save current state to undo stack
+            undoStack.push(deepCopyState());
+
+            // Restore redo state
+            const redoState = redoStack.pop();
+            appState = redoState;
+
+            // Refresh UI
+            refreshCurrentView();
+            saveToLocalStorage();
+
+            return true;
+        }
+
+        function refreshCurrentView() {
+            // Determine which view is currently visible and refresh it
+            const characterMgmt = document.getElementById('characterManagement');
+            const annotationWs = document.getElementById('annotationWorkspace');
+
+            if (characterMgmt.style.display !== 'none') {
+                // Refresh character management view
+                updateTopCharacters();
+                renderCharacterList();
+            } else if (annotationWs.style.display !== 'none') {
+                // Refresh annotation workspace view
+                updateTopCharacters();
+                populateCharacterFilter();
+                renderSubtitleList();
+                updateProgress();
+            }
+        }
+
+        // Setup global keyboard listener for undo/redo
+        document.addEventListener('keydown', (e) => {
+            // Check for Ctrl+Z (undo)
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                // Don't trigger if user is typing in an input field
+                if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+
+                e.preventDefault();
+                if (performUndo()) {
+                    console.log('Undo performed');
+                }
+            }
+
+            // Check for Ctrl+Y or Ctrl+Shift+Z (redo)
+            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+                // Don't trigger if user is typing in an input field
+                if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+
+                e.preventDefault();
+                if (performRedo()) {
+                    console.log('Redo performed');
+                }
+            }
+        });
 
         function updateFilenameDisplay() {
             const currentFileEl = document.getElementById('currentFile');
@@ -2016,6 +2158,10 @@
                     characters: [],
                     topCharacters: []
                 };
+
+                // Clear undo/redo stacks
+                undoStack = [];
+                redoStack = [];
 
                 updateFilenameDisplay();
                 document.getElementById('uploadSection').style.display = 'block';
