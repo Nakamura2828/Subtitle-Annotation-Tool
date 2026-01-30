@@ -115,15 +115,6 @@
                 <div class="shortcuts" id="shortcutHints"></div>
             </div>
 
-            <div style="margin: 15px 0; padding: 12px; background-color: #e8f4f8; border: 1px solid #3498db; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 14px; color: #2c3e50;">
-                    <strong>Scene Management:</strong> Click on a line to make it active, then insert a scene break below it. Press ESC to clear selection.
-                </span>
-                <button class="btn" onclick="insertSceneBreak()" style="background-color: #3498db; color: white;">
-                    Insert Scene Break (Alt+N)
-                </button>
-            </div>
-
             <!-- Annotation Transfer (v1.7.1) - only visible when secondary track loaded -->
             <div id="annotationTransferBar" style="display: none; margin: 15px 0; padding: 12px; background-color: #fef3e2; border: 1px solid #f0ad4e; border-radius: 4px; align-items: center; justify-content: space-between;">
                 <span style="font-size: 14px; color: #2c3e50;">
@@ -131,6 +122,15 @@
                 </span>
                 <button class="btn" onclick="showTransferModal()" style="background-color: #f0ad4e; color: white;">
                     Apply Secondary as Primary
+                </button>
+            </div>
+
+            <div style="margin: 15px 0; padding: 12px; background-color: #e8f4f8; border: 1px solid #3498db; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 14px; color: #2c3e50;">
+                    <strong>Scene Management:</strong> Click on a line to make it active, then insert a scene break below it. Press ESC to clear selection.
+                </span>
+                <button class="btn" onclick="insertSceneBreak()" style="background-color: #3498db; color: white;">
+                    Insert Scene Break (Alt+N)
                 </button>
             </div>
 
@@ -179,6 +179,21 @@
                 <br>
                 <label>
                     <input type="radio" name="exportType" value="all"> All lines (including unannotated)
+                </label>
+            </div>
+
+            <div id="trackOptions" style="margin: 10px 0 20px 0; display: none;">
+                <p><strong>Track:</strong></p>
+                <label>
+                    <input type="radio" name="exportTrack" value="both" checked> Both (primary + secondary)
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="exportTrack" value="primary"> Primary text only
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="exportTrack" value="secondary"> Secondary text only
                 </label>
             </div>
 
@@ -279,6 +294,23 @@
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="closeTransferModal()">Cancel</button>
                 <button class="btn btn-success" onclick="confirmTransfer()">Apply Transfer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dual-Language Track Selection Modal (for secondary file) -->
+    <div class="modal" id="dualLanguageModal">
+        <div class="modal-content">
+            <h3>Dual-Language File Detected</h3>
+            <p>The secondary file contains two language tracks. Which track would you like to load as the secondary reference?</p>
+
+            <div id="dualLanguageOptions" style="margin: 20px 0;">
+                <!-- Radio buttons populated dynamically -->
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeDualLanguageModal()">Cancel</button>
+                <button class="btn btn-success" onclick="confirmDualLanguageChoice()">Load Selected Track</button>
             </div>
         </div>
     </div>

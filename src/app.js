@@ -4,6 +4,17 @@
 let primaryFile = null;
 let secondaryFile = null;
 
+// Temporary storage for dual-language modal callback
+let pendingSecondaryContent = null;
+let pendingDualLanguageInfo = null;
+
+// Language code display names
+const langDisplayNames = {
+    ja: 'Japanese', en: 'English', zh: 'Chinese', ko: 'Korean',
+    fr: 'French', de: 'German', es: 'Spanish', pt: 'Portuguese',
+    it: 'Italian', ru: 'Russian'
+};
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     setupFileUpload();
@@ -139,7 +150,19 @@ function processBothFiles() {
                 const secondaryContent = se.target.result;
                 const secondaryExtension = secondaryFile.name.split('.').pop().toLowerCase();
 
-                // Parse secondary file
+                // Check if secondary ASS file is dual-language
+                if (secondaryExtension === 'ass') {
+                    const dualLang = detectDualLanguageStyles(secondaryContent);
+                    if (dualLang) {
+                        // Store content and show selection modal
+                        pendingSecondaryContent = secondaryContent;
+                        pendingDualLanguageInfo = dualLang;
+                        showDualLanguageModal(dualLang);
+                        return;
+                    }
+                }
+
+                // Parse secondary file (single-language path)
                 let secondarySubtitles;
                 if (secondaryExtension === 'srt') {
                     secondarySubtitles = parseSRT(secondaryContent);
@@ -147,14 +170,7 @@ function processBothFiles() {
                     secondarySubtitles = parseASS(secondaryContent);
                 }
 
-                // Store secondary subtitles for manual re-linking
-                appState.secondarySubtitles = secondarySubtitles;
-
-                // Align secondary to primary
-                appState.subtitles = alignSubtitles(appState.subtitles, secondarySubtitles);
-
-                extractCharacters();
-                showCharacterManagement();
+                finishSecondaryProcessing(secondarySubtitles);
             };
             secondaryReader.readAsText(secondaryFile);
         } else {
@@ -170,6 +186,97 @@ function processBothFiles() {
         }
     };
     primaryReader.readAsText(primaryFile);
+}
+
+// Shared continuation for secondary file processing (used by both direct path and modal callback)
+function finishSecondaryProcessing(secondarySubtitles) {
+    appState.secondarySubtitles = secondarySubtitles;
+    appState.subtitles = alignSubtitles(appState.subtitles, secondarySubtitles);
+    extractCharacters();
+    showCharacterManagement();
+}
+
+// Dual-language track selection modal
+function showDualLanguageModal(dualLang) {
+    const modal = document.getElementById('dualLanguageModal');
+    const optionsDiv = document.getElementById('dualLanguageOptions');
+
+    // Extract language code from the suffixed style name
+    const langMatch = dualLang.secondary.match(/-(ja|en|zh|ko|fr|de|es|pt|it|ru)$/i);
+    const langCode = langMatch ? langMatch[1].toLowerCase() : null;
+    const langName = langCode ? (langDisplayNames[langCode] || langCode.toUpperCase()) : 'Secondary';
+
+    // Determine which label is which: the base style is the "other" language
+    // For a file with "Default" + "Default-ja", Default is typically English and Default-ja is Japanese
+    const baseLabel = langCode === 'en' ? langName : 'English';
+    const suffixLabel = langCode === 'en' ? 'English' : langName;
+
+    // If we can't determine the base language reliably, just use the style names
+    const baseName = dualLang.primary;
+    const suffixName = dualLang.secondary;
+
+    optionsDiv.innerHTML = `
+        <label style="display: block; margin-bottom: 12px; padding: 10px; background: rgba(52, 152, 219, 0.05); border: 1px solid rgba(52, 152, 219, 0.2); border-radius: 4px; cursor: pointer;">
+            <input type="radio" name="dualLangChoice" value="primary" checked style="margin-right: 8px;">
+            <strong>${baseName}</strong> <span style="color: #6c757d;">(base style — typically ${baseLabel})</span>
+        </label>
+        <label style="display: block; margin-bottom: 12px; padding: 10px; background: rgba(52, 152, 219, 0.05); border: 1px solid rgba(52, 152, 219, 0.2); border-radius: 4px; cursor: pointer;">
+            <input type="radio" name="dualLangChoice" value="secondary" style="margin-right: 8px;">
+            <strong>${suffixName}</strong> <span style="color: #6c757d;">(${suffixLabel})</span>
+        </label>
+        <label style="display: block; padding: 10px; background: rgba(149, 165, 166, 0.05); border: 1px solid rgba(149, 165, 166, 0.2); border-radius: 4px; cursor: pointer;">
+            <input type="radio" name="dualLangChoice" value="both" style="margin-right: 8px;">
+            <strong>Both tracks combined</strong> <span style="color: #6c757d;">(all dialogue lines concatenated)</span>
+        </label>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+function closeDualLanguageModal() {
+    document.getElementById('dualLanguageModal').style.display = 'none';
+    pendingSecondaryContent = null;
+    pendingDualLanguageInfo = null;
+    // Processing was interrupted mid-way (primary parsed but secondary not finished).
+    // Reset state so the user can try again from the upload screen.
+    appState.filename = '';
+    appState.secondaryFilename = null;
+    appState.hasSecondaryTrack = false;
+    appState.subtitles = [];
+    updateFilenameDisplay();
+}
+
+function confirmDualLanguageChoice() {
+    const choice = document.querySelector('input[name="dualLangChoice"]:checked').value;
+    const content = pendingSecondaryContent;
+    const dualLang = pendingDualLanguageInfo;
+
+    // Close modal and clear pending state
+    document.getElementById('dualLanguageModal').style.display = 'none';
+
+    let secondarySubtitles;
+    let trackLabel;
+
+    if (choice === 'primary') {
+        secondarySubtitles = parseASS(content, [dualLang.primary]);
+        trackLabel = dualLang.primary;
+    } else if (choice === 'secondary') {
+        secondarySubtitles = parseASS(content, [dualLang.secondary]);
+        trackLabel = dualLang.secondary;
+    } else {
+        // 'both' - parse without style filter (original behavior)
+        secondarySubtitles = parseASS(content);
+        trackLabel = `${dualLang.primary}+${dualLang.secondary}`;
+    }
+
+    // Update the secondary filename to indicate which track was chosen
+    appState.secondaryFilename = `${secondaryFile.name} [${trackLabel}]`;
+    updateFilenameDisplay();
+
+    pendingSecondaryContent = null;
+    pendingDualLanguageInfo = null;
+
+    finishSecondaryProcessing(secondarySubtitles);
 }
 
 function setupUndoRedoListeners() {

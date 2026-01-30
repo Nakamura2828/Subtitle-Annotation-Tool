@@ -3,6 +3,13 @@
 function showExportModal() {
     document.getElementById('exportModal').classList.add('show');
 
+    // Show/hide track options based on whether secondary track is loaded
+    const trackOptions = document.getElementById('trackOptions');
+    trackOptions.style.display = appState.hasSecondaryTrack ? 'block' : 'none';
+    // Reset to default "both" when opening
+    const bothRadio = document.querySelector('input[name="exportTrack"][value="both"]');
+    if (bothRadio) bothRadio.checked = true;
+
     // Show/hide TXT options based on format selection
     const updateTxtOptions = () => {
         const format = document.querySelector('input[name="exportFormat"]:checked').value;
@@ -24,6 +31,21 @@ function closeExportModal() {
     document.getElementById('exportModal').classList.remove('show');
 }
 
+// Returns the selected track export mode: 'both', 'primary', or 'secondary'
+function getExportTrack() {
+    if (!appState.hasSecondaryTrack) return 'primary';
+    const checked = document.querySelector('input[name="exportTrack"]:checked');
+    return checked ? checked.value : 'both';
+}
+
+// Returns the dialogue text for a subtitle based on track selection
+function getDialogueText(sub, trackChoice) {
+    if (trackChoice === 'secondary') {
+        return stripASSCodes(sub.secondaryText) || '';
+    }
+    return stripASSCodes(sub.text);
+}
+
 function handleExport() {
     const format = document.querySelector('input[name="exportFormat"]:checked').value;
     if (format === 'json') {
@@ -37,6 +59,7 @@ function handleExport() {
 
 function exportJSON() {
     const exportType = document.querySelector('input[name="exportType"]:checked').value;
+    const trackChoice = getExportTrack();
 
     let dataToExport = appState.subtitles;
     if (exportType === 'annotated') {
@@ -59,6 +82,8 @@ function exportJSON() {
 
     // Check if scenes are defined
     const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
+    // Only include secondary column when track choice is "both"
+    const includeSecondary = trackChoice === 'both' && appState.hasSecondaryTrack;
 
     let jsonData;
 
@@ -83,11 +108,11 @@ function exportJSON() {
             const entry = {
                 timestamp: sub.timestamp,
                 character: characterName,
-                dialogue: stripASSCodes(sub.text)
+                dialogue: getDialogueText(sub, trackChoice)
             };
 
-            // Add secondary text if dual-track mode (v1.6)
-            if (appState.hasSecondaryTrack && sub.secondaryText) {
+            // Add secondary text only when exporting both tracks
+            if (includeSecondary && sub.secondaryText) {
                 entry.secondaryDialogue = stripASSCodes(sub.secondaryText);
             }
 
@@ -119,11 +144,11 @@ function exportJSON() {
             const entry = {
                 timestamp: sub.timestamp,
                 character: characterName,
-                dialogue: stripASSCodes(sub.text)
+                dialogue: getDialogueText(sub, trackChoice)
             };
 
-            // Add secondary text if dual-track mode (v1.6)
-            if (appState.hasSecondaryTrack && sub.secondaryText) {
+            // Add secondary text only when exporting both tracks
+            if (includeSecondary && sub.secondaryText) {
                 entry.secondaryDialogue = stripASSCodes(sub.secondaryText);
             }
 
@@ -144,6 +169,7 @@ function exportJSON() {
 
 function exportCSV() {
     const exportType = document.querySelector('input[name="exportType"]:checked').value;
+    const trackChoice = getExportTrack();
 
     let dataToExport = appState.subtitles;
     if (exportType === 'annotated') {
@@ -166,6 +192,7 @@ function exportCSV() {
 
     // Check if scenes are defined
     const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
+    const includeSecondary = trackChoice === 'both' && appState.hasSecondaryTrack;
 
     // Build CSV with header row
     const csvRows = [];
@@ -175,8 +202,8 @@ function exportCSV() {
     } else {
         header = 'timestamp,character,dialogue';
     }
-    // Add secondary dialogue column if dual-track mode (v1.6)
-    if (appState.hasSecondaryTrack) {
+    // Add secondary dialogue column only when exporting both tracks
+    if (includeSecondary) {
         header += ',secondaryDialogue';
     }
     csvRows.push(header);
@@ -194,8 +221,7 @@ function exportCSV() {
 
         const timestamp = escapeCSV(sub.timestamp);
         const character = escapeCSV(characterName);
-        const dialogue = escapeCSV(stripASSCodes(sub.text));
-        const secondaryDialogue = appState.hasSecondaryTrack ? escapeCSV(stripASSCodes(sub.secondaryText) || '') : '';
+        const dialogue = escapeCSV(getDialogueText(sub, trackChoice));
 
         let row;
         if (hasScenes) {
@@ -206,8 +232,9 @@ function exportCSV() {
             row = `${timestamp},${character},${dialogue}`;
         }
 
-        // Append secondary dialogue if dual-track mode (v1.6)
-        if (appState.hasSecondaryTrack) {
+        // Append secondary dialogue only when exporting both tracks
+        if (includeSecondary) {
+            const secondaryDialogue = escapeCSV(stripASSCodes(sub.secondaryText) || '');
             row += `,${secondaryDialogue}`;
         }
 
@@ -231,6 +258,7 @@ function exportCSV() {
 function exportTXT() {
     const exportType = document.querySelector('input[name="exportType"]:checked').value;
     const suppressRepeated = document.getElementById('suppressRepeatedNames').checked;
+    const trackChoice = getExportTrack();
 
     let dataToExport = appState.subtitles;
     if (exportType === 'annotated') {
@@ -256,6 +284,7 @@ function exportTXT() {
     let previousCharacter = null;
     let previousSceneId = null;
     const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
+    const includeSecondary = trackChoice === 'both' && appState.hasSecondaryTrack;
 
     dataToExport.forEach(sub => {
         // Use canonical name for export
@@ -293,7 +322,7 @@ function exportTXT() {
         }
 
         // Determine whether to include character name
-        const cleanText = stripASSCodes(sub.text);
+        const cleanText = getDialogueText(sub, trackChoice);
         let dialogueLine;
         if (suppressRepeated && !characterChanged && !sceneChanged && previousCharacter !== null) {
             // Suppress character name for consecutive lines from same character in same scene
@@ -303,8 +332,8 @@ function exportTXT() {
             dialogueLine = `${characterName}: ${cleanText}`;
         }
 
-        // Add secondary dialogue if dual-track mode (v1.6)
-        if (appState.hasSecondaryTrack && sub.secondaryText) {
+        // Add secondary dialogue only when exporting both tracks
+        if (includeSecondary && sub.secondaryText) {
             dialogueLine += `\n[Secondary] ${stripASSCodes(sub.secondaryText)}`;
         }
 
