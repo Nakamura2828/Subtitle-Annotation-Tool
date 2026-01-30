@@ -505,6 +505,10 @@
                 <label>
                     <input type="radio" name="exportFormat" value="csv"> CSV (for spreadsheet analysis)
                 </label>
+                <br>
+                <label>
+                    <input type="radio" name="exportFormat" value="txt"> TXT (screenplay/dialogue format)
+                </label>
             </div>
 
             <p><strong>Content:</strong></p>
@@ -516,6 +520,14 @@
                 <label>
                     <input type="radio" name="exportType" value="all"> All lines (including unannotated)
                 </label>
+            </div>
+
+            <div id="txtOptions" style="margin: 10px 0 20px 0; display: none;">
+                <p><strong>TXT Options:</strong></p>
+                <label>
+                    <input type="checkbox" id="suppressRepeatedNames"> Suppress repeated character names
+                </label>
+                <p style="font-size: 12px; color: #7f8c8d; margin: 5px 0 0 20px;">⚠️ Note: May be ambiguous if the same character appears in consecutive scenes</p>
             </div>
 
             <div class="modal-buttons">
@@ -2027,6 +2039,22 @@
 
         function showExportModal() {
             document.getElementById('exportModal').classList.add('show');
+
+            // Show/hide TXT options based on format selection
+            const updateTxtOptions = () => {
+                const format = document.querySelector('input[name="exportFormat"]:checked').value;
+                const txtOptions = document.getElementById('txtOptions');
+                txtOptions.style.display = format === 'txt' ? 'block' : 'none';
+            };
+
+            // Add event listeners to format radio buttons
+            document.querySelectorAll('input[name="exportFormat"]').forEach(radio => {
+                radio.removeEventListener('change', updateTxtOptions); // Remove old listeners
+                radio.addEventListener('change', updateTxtOptions);
+            });
+
+            // Initial update
+            updateTxtOptions();
         }
 
         function closeExportModal() {
@@ -2039,6 +2067,8 @@
                 exportJSON();
             } else if (format === 'csv') {
                 exportCSV();
+            } else if (format === 'txt') {
+                exportTXT();
             }
         }
 
@@ -2115,6 +2145,72 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = appState.filename.replace(/\.(srt|ass)$/i, '-annotated.csv');
+            a.click();
+            URL.revokeObjectURL(url);
+
+            closeExportModal();
+        }
+
+        function exportTXT() {
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+            const suppressRepeated = document.getElementById('suppressRepeatedNames').checked;
+
+            let dataToExport = appState.subtitles;
+            if (exportType === 'annotated') {
+                dataToExport = appState.subtitles.filter(s => s.character);
+            }
+
+            // Build dialogue text in screenplay format
+            const lines = [];
+            let previousCharacter = null;
+
+            dataToExport.forEach(sub => {
+                // Use canonical name for export
+                let characterName = sub.character || '[Unknown]';
+                if (sub.character) {
+                    const charObj = appState.characters.find(c => c.name === sub.character);
+                    if (charObj && charObj.canonicalName) {
+                        characterName = charObj.canonicalName;
+                    }
+                }
+
+                const characterChanged = previousCharacter !== characterName;
+
+                // Determine whether to include character name
+                let dialogueLine;
+                if (suppressRepeated && !characterChanged && previousCharacter !== null) {
+                    // Suppress character name for consecutive lines from same character
+                    dialogueLine = sub.text;
+                } else {
+                    // Include character name (first line or character changed)
+                    dialogueLine = `${characterName}: ${sub.text}`;
+                }
+
+                // Add appropriate spacing
+                if (previousCharacter === null) {
+                    // First line - no spacing before
+                    lines.push(dialogueLine);
+                } else if (characterChanged) {
+                    // Different character - add empty line (double newline)
+                    lines.push(''); // Empty line for spacing
+                    lines.push(dialogueLine);
+                } else {
+                    // Same character - single newline
+                    lines.push(dialogueLine);
+                }
+
+                previousCharacter = characterName;
+            });
+
+            // Join all lines with single newlines (the empty strings create double newlines)
+            const txtContent = lines.join('\n');
+
+            // Create and download the file
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = appState.filename.replace(/\.(srt|ass)$/i, '-dialogue.txt');
             a.click();
             URL.revokeObjectURL(url);
 
