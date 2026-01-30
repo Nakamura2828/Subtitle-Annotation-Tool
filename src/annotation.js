@@ -193,6 +193,7 @@ function renderKeyboardHints() {
     hints.push('<div class="shortcut"><span class="key">J/K</span> Navigate up/down</div>');
     hints.push('<div class="shortcut"><span class="key">ESC</span> Clear selection</div>');
     hints.push('<div class="shortcut"><span class="key">Alt+N</span> Insert scene break</div>');
+    hints.push('<div class="shortcut"><span class="key">Del</span> Delete active line</div>');
     hints.push('<div class="shortcut"><span class="key">Ctrl+Z</span> Undo</div>');
     hints.push('<div class="shortcut"><span class="key">Ctrl+Y</span> Redo</div>');
     container.innerHTML = hints.join('');
@@ -361,8 +362,8 @@ function renderSubtitleList() {
 }
 
 function handleKeyPress(e) {
-    // Only handle if not in an input field
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    // Only handle if not in an input field or contenteditable
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
 
     const key = e.key.toLowerCase();
 
@@ -416,23 +417,36 @@ function handleKeyPress(e) {
         insertSceneBreak();
         return;
     }
+
+    // Check for Delete key - delete active line
+    if (e.key === 'Delete') {
+        e.preventDefault();
+        deleteActiveLine();
+        return;
+    }
 }
 
 function navigateLines(direction) {
+    const entries = Array.from(document.querySelectorAll('.subtitle-entry'));
+    if (entries.length === 0) return;
+
     const currentActive = document.querySelector('.subtitle-entry.active');
-    let currentIndex = currentActive ? parseInt(currentActive.dataset.index) : -1;
 
-    const nextIndex = currentIndex + direction;
-    if (nextIndex >= 0 && nextIndex < appState.subtitles.length) {
-        document.querySelectorAll('.subtitle-entry').forEach(entry => {
-            entry.classList.remove('active');
-        });
+    if (!currentActive) {
+        // No active entry - activate first or last depending on direction
+        const target = direction > 0 ? entries[0] : entries[entries.length - 1];
+        target.classList.add('active');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
 
-        const nextElement = document.querySelector(`[data-index="${nextIndex}"]`);
-        if (nextElement) {
-            nextElement.classList.add('active');
-            nextElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+    const currentPos = entries.indexOf(currentActive);
+    const nextPos = currentPos + direction;
+
+    if (nextPos >= 0 && nextPos < entries.length) {
+        currentActive.classList.remove('active');
+        entries[nextPos].classList.add('active');
+        entries[nextPos].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 
@@ -462,17 +476,18 @@ function scrollToNextUnannotated() {
     // Find the first unannotated line
     const firstUnannotated = appState.subtitles.findIndex(s => !s.character);
 
+    // If all lines are annotated, leave current active state as-is
+    if (firstUnannotated === -1) return;
+
     // Update active highlighting
     document.querySelectorAll('.subtitle-entry').forEach(entry => {
         entry.classList.remove('active');
     });
 
-    if (firstUnannotated !== -1) {
-        const element = document.querySelector(`[data-index="${firstUnannotated}"]`);
-        if (element) {
-            element.classList.add('active');
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+    const element = document.querySelector(`.subtitle-entry[data-index="${firstUnannotated}"]`);
+    if (element) {
+        element.classList.add('active');
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 
@@ -496,9 +511,9 @@ function assignCharacter(index, character) {
     populateSceneFilter(); // Update scene filter counts
 
     // Update the visual representation
-    const entry = document.querySelector(`[data-index="${index}"]`);
+    const entry = document.querySelector(`.subtitle-entry[data-index="${index}"]`);
     if (entry) {
-        entry.classList.remove('annotated', 'prefilled', 'active');
+        entry.classList.remove('annotated', 'prefilled');
         if (character) {
             entry.classList.add('annotated');
         }
@@ -714,6 +729,48 @@ function updateProgress() {
 
     const exportStats = document.getElementById('exportStats');
     exportStats.textContent = `${annotated} lines annotated, ${total - annotated} remaining`;
+}
+
+// --- Delete Line ---
+
+function deleteActiveLine() {
+    const activeEntry = document.querySelector('.subtitle-entry.active');
+    if (!activeEntry) return;
+
+    const delIdx = parseInt(activeEntry.dataset.index);
+
+    saveStateForUndo();
+
+    // Remove the subtitle line
+    appState.subtitles.splice(delIdx, 1);
+
+    // Adjust scene breaks: remove any at the deleted index, decrement those above it
+    if (appState.sceneBreaks && appState.sceneBreaks.length > 0) {
+        appState.sceneBreaks = appState.sceneBreaks
+            .filter(idx => idx !== delIdx)
+            .map(idx => idx > delIdx ? idx - 1 : idx);
+    }
+
+    // Recount character counts
+    appState.characters.forEach(char => {
+        char.count = appState.subtitles.filter(s => s.character === char.name).length;
+    });
+
+    saveToLocalStorage();
+    populateCharacterFilter();
+    populateSceneFilter();
+    renderSubtitleList();
+    updateProgress();
+
+    // Activate the line that took the deleted line's position (or the last line)
+    const newActiveIdx = Math.min(delIdx, appState.subtitles.length - 1);
+    if (newActiveIdx >= 0) {
+        const newActive = document.querySelector(`.subtitle-entry[data-index="${newActiveIdx}"]`);
+        if (newActive) {
+            newActive.classList.add('active');
+            newActive.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
 }
 
 // --- Annotation Transfer (v1.7.1) ---
