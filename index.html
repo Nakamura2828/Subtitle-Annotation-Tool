@@ -58,13 +58,24 @@
                 <div class="progress-fill" id="progressFill">0 / 0 annotated</div>
             </div>
 
-            <div style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
-                <label for="characterFilter" style="font-weight: 600;">Filter:</label>
-                <select id="characterFilter" onchange="handleFilterChange()" style="padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; flex: 1; max-width: 300px;">
-                    <option value="all">All lines</option>
-                    <option value="unannotated">Unannotated only</option>
-                </select>
-                <span id="filterStats" style="color: #6c757d; font-size: 14px;"></span>
+            <div style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                <!-- Scene Filter -->
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <label for="sceneFilter" style="font-weight: 600; min-width: 100px;">Scene Filter:</label>
+                    <select id="sceneFilter" onchange="handleSceneFilterChange()" style="padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; flex: 1; max-width: 300px;">
+                        <option value="all">All scenes</option>
+                    </select>
+                    <span id="sceneFilterStats" style="color: #6c757d; font-size: 14px;"></span>
+                </div>
+                <!-- Line Filter -->
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label for="characterFilter" style="font-weight: 600; min-width: 100px;">Line Filter:</label>
+                    <select id="characterFilter" onchange="handleFilterChange()" style="padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; flex: 1; max-width: 300px;">
+                        <option value="all">All lines</option>
+                        <option value="unannotated">Unannotated only</option>
+                    </select>
+                    <span id="filterStats" style="color: #6c757d; font-size: 14px;"></span>
+                </div>
             </div>
 
             <div class="keyboard-hints">
@@ -132,9 +143,8 @@
             <div id="txtOptions" style="margin: 10px 0 20px 0; display: none;">
                 <p><strong>TXT Options:</strong></p>
                 <label>
-                    <input type="checkbox" id="suppressRepeatedNames"> Suppress repeated character names
+                    <input type="checkbox" id="suppressRepeatedNames" checked> Suppress repeated character names
                 </label>
-                <p style="font-size: 12px; color: #7f8c8d; margin: 5px 0 0 20px;">⚠️ Note: May be ambiguous if the same character appears in consecutive scenes</p>
             </div>
 
             <div class="modal-buttons">

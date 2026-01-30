@@ -2,6 +2,7 @@
 
 function renderAnnotationWorkspace() {
     populateCharacterFilter();
+    populateSceneFilter();
     renderKeyboardHints();
     renderSubtitleList();
     updateProgress();
@@ -55,6 +56,67 @@ function populateCharacterFilter() {
     }
 }
 
+function populateSceneFilter() {
+    const filterSelect = document.getElementById('sceneFilter');
+
+    // Use currentSceneFilter variable as source of truth
+    const currentValue = currentSceneFilter;
+
+    // Clear existing options (keep "All scenes")
+    while (filterSelect.options.length > 1) {
+        filterSelect.remove(1);
+    }
+
+    // Only populate if scenes are defined
+    if (!appState.sceneBreaks || appState.sceneBreaks.length === 0) {
+        // No scenes defined - disable the filter
+        filterSelect.disabled = true;
+        filterSelect.title = "Define scene breaks first (Alt+N)";
+        return;
+    }
+
+    filterSelect.disabled = false;
+    filterSelect.title = "";
+
+    // Add separator
+    const separator = document.createElement('option');
+    separator.disabled = true;
+    separator.textContent = '─────────';
+    filterSelect.appendChild(separator);
+
+    // Add character options (only non-alias characters who have lines)
+    const characters = appState.characters.filter(c => !c.isAlias && c.name !== '(Other)' && c.count > 0);
+    characters.forEach(char => {
+        const scenes = getScenesWithCharacter(char.name);
+        if (scenes && scenes.length > 0) {
+            const option = document.createElement('option');
+            option.value = char.name;
+            option.textContent = `${char.name} (${scenes.length} scene${scenes.length > 1 ? 's' : ''})`;
+            filterSelect.appendChild(option);
+        }
+    });
+
+    // Add "(Other)" at the end if it has lines
+    const otherChar = appState.characters.find(c => c.name === '(Other)');
+    if (otherChar && otherChar.count > 0) {
+        const scenes = getScenesWithCharacter('(Other)');
+        if (scenes && scenes.length > 0) {
+            const option = document.createElement('option');
+            option.value = '(Other)';
+            option.textContent = `(Other) (${scenes.length} scene${scenes.length > 1 ? 's' : ''})`;
+            filterSelect.appendChild(option);
+        }
+    }
+
+    // Restore selection if it still exists
+    if (currentValue && Array.from(filterSelect.options).some(opt => opt.value === currentValue)) {
+        filterSelect.value = currentValue;
+    } else {
+        filterSelect.value = 'all';
+        currentSceneFilter = 'all';
+    }
+}
+
 function handleFilterChange() {
     const filterSelect = document.getElementById('characterFilter');
     currentFilter = filterSelect.value;
@@ -62,19 +124,61 @@ function handleFilterChange() {
     updateFilterStats();
 }
 
-function updateFilterStats() {
-    const statsEl = document.getElementById('filterStats');
-    let filteredCount;
+function handleSceneFilterChange() {
+    const filterSelect = document.getElementById('sceneFilter');
+    currentSceneFilter = filterSelect.value;
+    renderSubtitleList();
+    updateFilterStats();
+}
 
-    if (currentFilter === 'all') {
-        filteredCount = appState.subtitles.length;
-        statsEl.textContent = `Showing all ${filteredCount} lines`;
-    } else if (currentFilter === 'unannotated') {
-        filteredCount = appState.subtitles.filter(s => !s.character).length;
-        statsEl.textContent = `Showing ${filteredCount} unannotated lines`;
+function updateFilterStats() {
+    const sceneStatsEl = document.getElementById('sceneFilterStats');
+    const lineStatsEl = document.getElementById('filterStats');
+
+    // Calculate scene filter stats
+    if (currentSceneFilter === 'all') {
+        if (appState.sceneBreaks && appState.sceneBreaks.length > 0) {
+            const totalScenes = appState.sceneBreaks.length + 1;
+            sceneStatsEl.textContent = `All ${totalScenes} scenes`;
+        } else {
+            sceneStatsEl.textContent = 'No scenes defined';
+        }
     } else {
-        filteredCount = appState.subtitles.filter(s => s.character === currentFilter).length;
-        statsEl.textContent = `Showing ${filteredCount} lines`;
+        const scenesWithCharacter = getScenesWithCharacter(currentSceneFilter);
+        if (scenesWithCharacter && scenesWithCharacter.length > 0) {
+            sceneStatsEl.textContent = `${scenesWithCharacter.length} scene${scenesWithCharacter.length > 1 ? 's' : ''} with ${currentSceneFilter}`;
+        } else {
+            sceneStatsEl.textContent = 'No scenes found';
+        }
+    }
+
+    // Calculate line filter stats (with scene filter applied)
+    let filteredSubtitles = appState.subtitles;
+
+    // Apply scene filter first
+    if (currentSceneFilter !== 'all') {
+        const scenesWithCharacter = getScenesWithCharacter(currentSceneFilter);
+        if (scenesWithCharacter && scenesWithCharacter.length > 0) {
+            filteredSubtitles = filteredSubtitles.filter((sub, index) => {
+                const sceneId = getSceneId(index);
+                return sceneId && scenesWithCharacter.includes(sceneId);
+            });
+        } else {
+            filteredSubtitles = [];
+        }
+    }
+
+    // Apply line filter
+    let lineFilteredCount;
+    if (currentFilter === 'all') {
+        lineFilteredCount = filteredSubtitles.length;
+        lineStatsEl.textContent = `${lineFilteredCount} total lines`;
+    } else if (currentFilter === 'unannotated') {
+        lineFilteredCount = filteredSubtitles.filter(s => !s.character).length;
+        lineStatsEl.textContent = `${lineFilteredCount} unannotated`;
+    } else {
+        lineFilteredCount = filteredSubtitles.filter(s => s.character === currentFilter).length;
+        lineStatsEl.textContent = `${lineFilteredCount} lines`;
     }
 }
 
@@ -105,12 +209,28 @@ function renderSubtitleList() {
         }
     };
 
-    // Apply filter
+    // Apply filters (scene filter first, then line filter)
     let filteredSubtitles = appState.subtitles;
+
+    // Step 1: Apply scene filter if active
+    if (currentSceneFilter !== 'all') {
+        const scenesWithCharacter = getScenesWithCharacter(currentSceneFilter);
+        if (scenesWithCharacter && scenesWithCharacter.length > 0) {
+            filteredSubtitles = filteredSubtitles.filter((sub, index) => {
+                const sceneId = getSceneId(index);
+                return sceneId && scenesWithCharacter.includes(sceneId);
+            });
+        } else {
+            // Character has no scenes - show nothing
+            filteredSubtitles = [];
+        }
+    }
+
+    // Step 2: Apply line filter
     if (currentFilter === 'unannotated') {
-        filteredSubtitles = appState.subtitles.filter(s => !s.character);
+        filteredSubtitles = filteredSubtitles.filter(s => !s.character);
     } else if (currentFilter !== 'all') {
-        filteredSubtitles = appState.subtitles.filter(s => s.character === currentFilter);
+        filteredSubtitles = filteredSubtitles.filter(s => s.character === currentFilter);
     }
 
     // Update filter stats
@@ -316,6 +436,7 @@ function assignCharacter(index, character) {
     saveToLocalStorage();
     updateProgress();
     populateCharacterFilter(); // Update filter counts
+    populateSceneFilter(); // Update scene filter counts
 
     // Update the visual representation
     const entry = document.querySelector(`[data-index="${index}"]`);

@@ -43,6 +43,20 @@ function exportJSON() {
         dataToExport = appState.subtitles.filter(s => s.character);
     }
 
+    // Apply scene filter if active
+    if (currentSceneFilter !== 'all') {
+        const scenesWithCharacter = getScenesWithCharacter(currentSceneFilter);
+        if (scenesWithCharacter && scenesWithCharacter.length > 0) {
+            dataToExport = dataToExport.filter(sub => {
+                const lineIndex = appState.subtitles.indexOf(sub);
+                const sceneId = getSceneId(lineIndex);
+                return sceneId && scenesWithCharacter.includes(sceneId);
+            });
+        } else {
+            dataToExport = [];
+        }
+    }
+
     // Check if scenes are defined
     const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
 
@@ -124,6 +138,20 @@ function exportCSV() {
         dataToExport = appState.subtitles.filter(s => s.character);
     }
 
+    // Apply scene filter if active
+    if (currentSceneFilter !== 'all') {
+        const scenesWithCharacter = getScenesWithCharacter(currentSceneFilter);
+        if (scenesWithCharacter && scenesWithCharacter.length > 0) {
+            dataToExport = dataToExport.filter(sub => {
+                const lineIndex = appState.subtitles.indexOf(sub);
+                const sceneId = getSceneId(lineIndex);
+                return sceneId && scenesWithCharacter.includes(sceneId);
+            });
+        } else {
+            dataToExport = [];
+        }
+    }
+
     // Check if scenes are defined
     const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
 
@@ -180,6 +208,20 @@ function exportTXT() {
     let dataToExport = appState.subtitles;
     if (exportType === 'annotated') {
         dataToExport = appState.subtitles.filter(s => s.character);
+    }
+
+    // Apply scene filter if active
+    if (currentSceneFilter !== 'all') {
+        const scenesWithCharacter = getScenesWithCharacter(currentSceneFilter);
+        if (scenesWithCharacter && scenesWithCharacter.length > 0) {
+            dataToExport = dataToExport.filter(sub => {
+                const lineIndex = appState.subtitles.indexOf(sub);
+                const sceneId = getSceneId(lineIndex);
+                return sceneId && scenesWithCharacter.includes(sceneId);
+            });
+        } else {
+            dataToExport = [];
+        }
     }
 
     // Build dialogue text in screenplay format

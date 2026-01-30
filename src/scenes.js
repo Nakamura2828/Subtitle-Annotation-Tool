@@ -53,3 +53,24 @@ function getSceneId(lineIndex) {
     }
     return sceneId; // Line is after the last scene break
 }
+
+// Helper function to get all scene IDs where a character appears
+function getScenesWithCharacter(characterName) {
+    if (!appState.sceneBreaks || appState.sceneBreaks.length === 0) {
+        return null; // No scenes defined - treat as single scene
+    }
+
+    const sceneIds = new Set();
+
+    appState.subtitles.forEach((sub, index) => {
+        // Check if this line belongs to the specified character
+        if (sub.character === characterName) {
+            const sceneId = getSceneId(index);
+            if (sceneId !== null) {
+                sceneIds.add(sceneId);
+            }
+        }
+    });
+
+    return Array.from(sceneIds).sort((a, b) => a - b);
+}

@@ -12,6 +12,7 @@ let aliasExpandedState = {};
 
 // Filter state for annotation workspace
 let currentFilter = 'all'; // 'all', 'unannotated', or character name
+let currentSceneFilter = 'all'; // 'all' or character name (shows scenes where that character appears)
 
 // Undo/Redo stacks
 let undoStack = [];
