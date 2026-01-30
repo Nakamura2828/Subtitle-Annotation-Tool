@@ -577,10 +577,12 @@ function showLinkSecondaryModal(primaryIndex) {
         listContainer.appendChild(item);
     });
 
-    // Scroll to the approximate matching region
-    scrollToMatchingRegion(listContainer, primary);
-
     document.getElementById('linkSecondaryModal').classList.add('show');
+
+    // Scroll after modal is visible (scrollIntoView doesn't work on hidden elements)
+    requestAnimationFrame(() => {
+        scrollToMatchingRegion(listContainer, primary);
+    });
 }
 
 function scrollToMatchingRegion(listContainer, primary) {
