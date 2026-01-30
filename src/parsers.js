@@ -179,26 +179,73 @@ function timestampsOverlap(timestamp1, timestamp2, tolerance = 500) {
     return (t1.start - tolerance <= t2.end) && (t1.end + tolerance >= t2.start);
 }
 
+// Calculate overlap in ms between two parsed time ranges
+function calcOverlapMs(t1, t2) {
+    const overlapStart = Math.max(t1.start, t2.start);
+    const overlapEnd = Math.min(t1.end, t2.end);
+    return Math.max(0, overlapEnd - overlapStart);
+}
+
 // Align secondary subtitles to primary subtitles
 // Returns primary array with secondaryText and secondaryIndices fields populated
+// Uses best-match preference: each secondary is assigned to the primary with the
+// most overlap. Only duplicated across primaries if overlap amounts are nearly equal.
 function alignSubtitles(primarySubtitles, secondarySubtitles, tolerance = 500) {
-    const aligned = primarySubtitles.map(primary => {
-        // Find all secondary subtitles that overlap with this primary subtitle
-        const overlapping = [];
-        secondarySubtitles.forEach((secondary, secIdx) => {
-            if (timestampsOverlap(primary.timestamp, secondary.timestamp, tolerance)) {
-                overlapping.push({ text: secondary.text, index: secIdx });
+    // Parse all timestamps once upfront
+    const primaryTimes = primarySubtitles.map(p => parseTimestamp(p.timestamp));
+    const secondaryTimes = secondarySubtitles.map(s => parseTimestamp(s.timestamp));
+
+    // For each secondary line, determine which primary line(s) it belongs to
+    // Key: primary index -> array of { text, index (secondary index) }
+    const primaryAssignments = primarySubtitles.map(() => []);
+
+    secondarySubtitles.forEach((secondary, secIdx) => {
+        const st = secondaryTimes[secIdx];
+        if (!st) return;
+
+        // Find all overlapping primaries and their overlap amounts
+        const candidates = [];
+        primarySubtitles.forEach((primary, priIdx) => {
+            const pt = primaryTimes[priIdx];
+            if (!pt) return;
+
+            // Check overlap with tolerance (same logic as timestampsOverlap)
+            if ((pt.start - tolerance <= st.end) && (pt.end + tolerance >= st.start)) {
+                const overlap = calcOverlapMs(pt, st);
+                candidates.push({ priIdx, overlap });
             }
         });
 
-        // Join multiple overlapping secondary lines with newline
-        const secondaryText = overlapping.length > 0
-            ? overlapping.map(s => s.text).join('\n')
-            : null;
+        if (candidates.length === 0) return;
 
-        // Store which secondary indices are linked (for shift operations)
-        const secondaryIndices = overlapping.length > 0
-            ? overlapping.map(s => s.index)
+        // Find the best (most overlap) candidate
+        candidates.sort((a, b) => b.overlap - a.overlap);
+        const bestOverlap = candidates[0].overlap;
+
+        // Assign to best match. Also assign to other primaries if their overlap
+        // is within 20% of the best (nearly equal overlap = genuine span).
+        const threshold = bestOverlap * 0.8;
+        for (const candidate of candidates) {
+            if (candidate.overlap >= threshold) {
+                primaryAssignments[candidate.priIdx].push({
+                    text: secondary.text,
+                    index: secIdx
+                });
+            }
+        }
+    });
+
+    // Build aligned result
+    const aligned = primarySubtitles.map((primary, priIdx) => {
+        const assigned = primaryAssignments[priIdx];
+        // Sort by secondary index to maintain original order
+        assigned.sort((a, b) => a.index - b.index);
+
+        const secondaryText = assigned.length > 0
+            ? assigned.map(s => s.text).join('\n')
+            : null;
+        const secondaryIndices = assigned.length > 0
+            ? assigned.map(s => s.index)
             : [];
 
         return {
