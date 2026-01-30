@@ -4,6 +4,7 @@ function renderAnnotationWorkspace() {
     populateCharacterFilter();
     populateSceneFilter();
     renderKeyboardHints();
+    updateTransferBarVisibility();
     renderSubtitleList();
     updateProgress();
     // Highlight the first unannotated line for keyboard shortcuts
@@ -713,4 +714,85 @@ function updateProgress() {
 
     const exportStats = document.getElementById('exportStats');
     exportStats.textContent = `${annotated} lines annotated, ${total - annotated} remaining`;
+}
+
+// --- Annotation Transfer (v1.7.1) ---
+
+function updateTransferBarVisibility() {
+    const bar = document.getElementById('annotationTransferBar');
+    if (bar) {
+        bar.style.display = appState.hasSecondaryTrack ? 'flex' : 'none';
+    }
+}
+
+function showTransferModal() {
+    // Count aligned vs unaligned lines for the preview
+    let alignedCount = 0;
+    let unalignedCount = 0;
+    appState.subtitles.forEach(sub => {
+        if (sub.secondaryText) {
+            alignedCount++;
+        } else {
+            unalignedCount++;
+        }
+    });
+
+    const previewEl = document.getElementById('transferPreview');
+    previewEl.textContent = `${alignedCount} lines have secondary text and will be replaced. ${unalignedCount} lines have no secondary text.`;
+
+    document.getElementById('transferModal').classList.add('show');
+}
+
+function closeTransferModal() {
+    document.getElementById('transferModal').classList.remove('show');
+}
+
+function confirmTransfer() {
+    const keepOriginal = document.getElementById('transferKeepOriginal').checked;
+
+    saveStateForUndo();
+
+    // Replace primary text with secondary text
+    appState.subtitles.forEach(sub => {
+        if (sub.secondaryText) {
+            // Aligned line: replace primary text with secondary
+            sub.text = sub.secondaryText;
+        } else if (!keepOriginal) {
+            // Unaligned line with "keep original" unchecked: blank the text
+            sub.text = '';
+        }
+        // else: unaligned line with "keep original" checked: leave text as-is
+
+        // Clear secondary fields
+        sub.secondaryText = null;
+        sub.secondaryIndices = [];
+    });
+
+    // Update filename: [secondaryFilename] (reannotated)
+    // Old session stays in localStorage under the original key
+    const newFilename = `${appState.secondaryFilename || 'secondary'} (reannotated)`;
+    appState.filename = newFilename;
+
+    // Clear secondary track
+    appState.hasSecondaryTrack = false;
+    appState.secondaryFilename = null;
+    appState.secondarySubtitles = [];
+
+    // Recount character counts (preserve existing character list/aliases/ordering)
+    appState.characters.forEach(char => {
+        char.count = appState.subtitles.filter(s => s.character === char.name).length;
+    });
+
+    // Save under new key
+    saveToLocalStorage();
+
+    // Update UI
+    updateFilenameDisplay();
+    updateTransferBarVisibility();
+    populateCharacterFilter();
+    populateSceneFilter();
+    renderSubtitleList();
+    updateProgress();
+
+    closeTransferModal();
 }

@@ -83,7 +83,10 @@ function refreshCurrentView() {
     } else if (annotationWs.style.display !== 'none') {
         // Refresh annotation workspace view
         updateTopCharacters();
+        updateFilenameDisplay();
+        updateTransferBarVisibility();
         populateCharacterFilter();
+        populateSceneFilter();
         renderSubtitleList();
         updateProgress();
     }

@@ -124,6 +124,16 @@
                 </button>
             </div>
 
+            <!-- Annotation Transfer (v1.7.1) - only visible when secondary track loaded -->
+            <div id="annotationTransferBar" style="display: none; margin: 15px 0; padding: 12px; background-color: #fef3e2; border: 1px solid #f0ad4e; border-radius: 4px; align-items: center; justify-content: space-between;">
+                <span style="font-size: 14px; color: #2c3e50;">
+                    <strong>Annotation Transfer:</strong> Replace primary text with secondary text, keeping all character annotations intact.
+                </span>
+                <button class="btn" onclick="showTransferModal()" style="background-color: #f0ad4e; color: white;">
+                    Apply Secondary as Primary
+                </button>
+            </div>
+
             <div class="subtitle-list" id="subtitleList"></div>
 
             <div class="export-section">
@@ -244,6 +254,31 @@
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="closeLinkSecondaryModal()">Cancel</button>
                 <button class="btn btn-success" onclick="confirmLinkSecondary()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Annotation Transfer Modal (v1.7.1) -->
+    <div class="modal" id="transferModal">
+        <div class="modal-content">
+            <h3>Apply Secondary as Primary</h3>
+            <p>This will replace primary text with secondary text for all aligned lines. Character annotations will be preserved.</p>
+
+            <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="transferKeepOriginal" checked style="margin-top: 3px;">
+                    <div>
+                        <strong>Keep original text for unaligned lines</strong>
+                        <div style="font-size: 13px; color: #6c757d; margin-top: 2px;">If unchecked, unaligned lines will have their text blanked</div>
+                    </div>
+                </label>
+            </div>
+
+            <div id="transferPreview" style="margin: 15px 0; padding: 10px; background-color: #f0f0f0; border-radius: 4px; font-size: 14px;"></div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeTransferModal()">Cancel</button>
+                <button class="btn btn-success" onclick="confirmTransfer()">Apply Transfer</button>
             </div>
         </div>
     </div>
