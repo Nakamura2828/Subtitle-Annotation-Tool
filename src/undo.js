@@ -13,6 +13,7 @@ function deepCopyState() {
         topCharacters: [...appState.topCharacters],
         sceneBreaks: appState.sceneBreaks ? [...appState.sceneBreaks] : [],
         hasSecondaryTrack: appState.hasSecondaryTrack || false,
+        lastSaved: appState.lastSaved || null,
         secondarySubtitles: appState.secondarySubtitles
             ? appState.secondarySubtitles.map(sub => ({...sub}))
             : []

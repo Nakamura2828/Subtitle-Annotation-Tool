@@ -8,7 +8,7 @@ let secondaryFile = null;
 document.addEventListener('DOMContentLoaded', () => {
     setupFileUpload();
     setupUndoRedoListeners();
-    checkForSavedSession();
+    renderSessionPicker();
 });
 
 function setupFileUpload() {
@@ -90,19 +90,7 @@ function processBothFiles() {
             const loadSaved = confirm(`Found a saved session for "${primaryFile.name}". Would you like to restore your progress?`);
             if (loadSaved) {
                 appState = JSON.parse(savedSession);
-
-                // Data migration: Initialize new fields if missing
-                if (!appState.sceneBreaks) appState.sceneBreaks = [];
-                if (!appState.secondaryFilename) appState.secondaryFilename = null;
-                if (!appState.hasSecondaryTrack) appState.hasSecondaryTrack = false;
-                if (!appState.secondarySubtitles) appState.secondarySubtitles = [];
-
-                // Migrate subtitle objects to include secondaryText and secondaryIndices fields
-                appState.subtitles = appState.subtitles.map(sub => ({
-                    ...sub,
-                    secondaryText: sub.secondaryText || null,
-                    secondaryIndices: sub.secondaryIndices || []
-                }));
+                migrateAppState();
 
                 updateFilenameDisplay();
                 showCharacterManagement();
@@ -237,7 +225,8 @@ function resetApp() {
             topCharacters: [],
             sceneBreaks: [],
             hasSecondaryTrack: false,
-            secondarySubtitles: []
+            secondarySubtitles: [],
+            lastSaved: null
         };
 
         // Clear file references
@@ -258,5 +247,7 @@ function resetApp() {
         document.getElementById('secondaryFilename').textContent = '';
         document.getElementById('clearSecondaryBtn').style.display = 'none';
         document.getElementById('processBothFilesBtn').style.display = 'none';
+        document.getElementById('importProjectInput').value = '';
+        renderSessionPicker();
     }
 }

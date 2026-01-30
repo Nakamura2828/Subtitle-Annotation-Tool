@@ -7,7 +7,8 @@ let appState = {
     topCharacters: [],
     sceneBreaks: [], // Array of line indices where scene breaks occur
     hasSecondaryTrack: false, // v1.6: Boolean flag indicating if secondary track is loaded
-    secondarySubtitles: [] // v1.6.1: Parsed secondary subtitle lines (preserved for manual re-linking)
+    secondarySubtitles: [], // v1.6.1: Parsed secondary subtitle lines (preserved for manual re-linking)
+    lastSaved: null // v1.7: ISO timestamp of last save (for session picker display)
 };
 
 // UI state for expandable alias sections (not persisted)

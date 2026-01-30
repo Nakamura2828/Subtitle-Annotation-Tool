@@ -43,6 +43,16 @@
                     <button class="btn btn-success" id="processBothFilesBtn" onclick="processBothFiles()" style="display: none;">Continue</button>
                 </div>
             </div>
+
+            <!-- Session Picker (populated by renderSessionPicker()) -->
+            <div id="sessionPickerContainer" style="display: none; margin-top: 20px;"></div>
+
+            <!-- Load Project File -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center;">
+                <p style="font-size: 13px; color: #7f8c8d; margin-bottom: 10px;">Or load a previously saved project file</p>
+                <input type="file" id="importProjectInput" accept=".saproj,.json" style="display: none;" onchange="importProject(event)">
+                <button class="btn btn-secondary" onclick="document.getElementById('importProjectInput').click()">Load Project File</button>
+            </div>
         </div>
 
         <!-- Character Management Section -->
@@ -123,6 +133,7 @@
                 <div>
                     <button class="btn" onclick="editCharacters()">Edit Characters</button>
                     <button class="btn btn-success" onclick="showExportModal()">Export</button>
+                    <button class="btn" onclick="exportProject()">Save Project</button>
                     <button class="btn btn-secondary" onclick="resetApp()">New File</button>
                     <button class="btn btn-danger" onclick="clearSession()">Clear Session</button>
                 </div>
