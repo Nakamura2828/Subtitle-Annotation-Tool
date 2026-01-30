@@ -1,5 +1,9 @@
 // Application initialization and main entry point
 
+// Temporary storage for uploaded files (v1.6: dual-track support)
+let primaryFile = null;
+let secondaryFile = null;
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     setupFileUpload();
@@ -8,67 +12,97 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupFileUpload() {
-    const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('fileInput');
+    const primaryInput = document.getElementById('fileInput');
+    const secondaryInput = document.getElementById('secondaryFileInput');
 
-    uploadZone.addEventListener('click', () => fileInput.click());
-
-    uploadZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadZone.classList.add('dragover');
-    });
-
-    uploadZone.addEventListener('dragleave', () => {
-        uploadZone.classList.remove('dragover');
-    });
-
-    uploadZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadZone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file) handleFileSelect(file);
-    });
-
-    fileInput.addEventListener('change', (e) => {
+    // Primary file input
+    primaryInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) handleFileSelect(file);
+        if (file && file.name.match(/\.(srt|ass)$/i)) {
+            primaryFile = file;
+            document.getElementById('primaryFilename').textContent = `✓ ${file.name}`;
+            updateContinueButton();
+        } else if (file) {
+            alert('Please select a .srt or .ass file');
+        }
+    });
+
+    // Secondary file input
+    secondaryInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && file.name.match(/\.(srt|ass)$/i)) {
+            secondaryFile = file;
+            document.getElementById('secondaryFilename').textContent = `✓ ${file.name}`;
+            document.getElementById('clearSecondaryBtn').style.display = 'inline-block';
+            updateContinueButton();
+        } else if (file) {
+            alert('Please select a .srt or .ass file');
+        }
     });
 }
 
-function handleFileSelect(file) {
-    if (!file.name.match(/\.(srt|ass)$/i)) {
-        alert('Please select a .srt or .ass file');
+function updateContinueButton() {
+    const continueBtn = document.getElementById('processBothFilesBtn');
+    if (primaryFile) {
+        continueBtn.style.display = 'inline-block';
+    } else {
+        continueBtn.style.display = 'none';
+    }
+}
+
+function clearSecondaryFile() {
+    secondaryFile = null;
+    document.getElementById('secondaryFileInput').value = '';
+    document.getElementById('secondaryFilename').textContent = '';
+    document.getElementById('clearSecondaryBtn').style.display = 'none';
+}
+
+function processBothFiles() {
+    if (!primaryFile) {
+        alert('Please select a primary subtitle file');
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const content = e.target.result;
-        const extension = file.name.split('.').pop().toLowerCase();
+    // Read primary file
+    const primaryReader = new FileReader();
+    primaryReader.onload = (e) => {
+        const primaryContent = e.target.result;
+        const primaryExtension = primaryFile.name.split('.').pop().toLowerCase();
 
-        appState.filename = file.name;
+        appState.filename = primaryFile.name;
+        appState.secondaryFilename = secondaryFile ? secondaryFile.name : null;
+        appState.hasSecondaryTrack = !!secondaryFile;
         updateFilenameDisplay();
 
-        // Reset filter state when loading a new file
+        // Reset filter state
         currentFilter = 'all';
+        currentSceneFilter = 'all';
 
-        // Clear undo/redo stacks when loading a new file
+        // Clear undo/redo stacks
         undoStack = [];
         redoStack = [];
 
         // Check for saved session
-        const savedSessionKey = `subtitle-annotation-${file.name}`;
+        const savedSessionKey = `subtitle-annotation-${primaryFile.name}`;
         const savedSession = localStorage.getItem(savedSessionKey);
 
         if (savedSession) {
-            const loadSaved = confirm(`Found a saved session for "${file.name}". Would you like to restore your progress?`);
+            const loadSaved = confirm(`Found a saved session for "${primaryFile.name}". Would you like to restore your progress?`);
             if (loadSaved) {
                 appState = JSON.parse(savedSession);
 
-                // Data migration: Initialize sceneBreaks if missing (for older saved sessions)
-                if (!appState.sceneBreaks) {
-                    appState.sceneBreaks = [];
-                }
+                // Data migration: Initialize new fields if missing
+                if (!appState.sceneBreaks) appState.sceneBreaks = [];
+                if (!appState.secondaryFilename) appState.secondaryFilename = null;
+                if (!appState.hasSecondaryTrack) appState.hasSecondaryTrack = false;
+                if (!appState.secondarySubtitles) appState.secondarySubtitles = [];
+
+                // Migrate subtitle objects to include secondaryText and secondaryIndices fields
+                appState.subtitles = appState.subtitles.map(sub => ({
+                    ...sub,
+                    secondaryText: sub.secondaryText || null,
+                    secondaryIndices: sub.secondaryIndices || []
+                }));
 
                 updateFilenameDisplay();
                 showCharacterManagement();
@@ -76,17 +110,51 @@ function handleFileSelect(file) {
             }
         }
 
-        // No saved session or user declined - parse fresh
-        if (extension === 'srt') {
-            appState.subtitles = parseSRT(content);
-        } else if (extension === 'ass') {
-            appState.subtitles = parseASS(content);
+        // Parse primary file
+        if (primaryExtension === 'srt') {
+            appState.subtitles = parseSRT(primaryContent);
+        } else if (primaryExtension === 'ass') {
+            appState.subtitles = parseASS(primaryContent);
         }
 
-        extractCharacters();
-        showCharacterManagement();
+        // If secondary file provided, read and align it
+        if (secondaryFile) {
+            const secondaryReader = new FileReader();
+            secondaryReader.onload = (se) => {
+                const secondaryContent = se.target.result;
+                const secondaryExtension = secondaryFile.name.split('.').pop().toLowerCase();
+
+                // Parse secondary file
+                let secondarySubtitles;
+                if (secondaryExtension === 'srt') {
+                    secondarySubtitles = parseSRT(secondaryContent);
+                } else if (secondaryExtension === 'ass') {
+                    secondarySubtitles = parseASS(secondaryContent);
+                }
+
+                // Store secondary subtitles for manual re-linking
+                appState.secondarySubtitles = secondarySubtitles;
+
+                // Align secondary to primary
+                appState.subtitles = alignSubtitles(appState.subtitles, secondarySubtitles);
+
+                extractCharacters();
+                showCharacterManagement();
+            };
+            secondaryReader.readAsText(secondaryFile);
+        } else {
+            // No secondary file - ensure all subtitles have secondaryText/secondaryIndices
+            appState.subtitles = appState.subtitles.map(sub => ({
+                ...sub,
+                secondaryText: null,
+                secondaryIndices: []
+            }));
+
+            extractCharacters();
+            showCharacterManagement();
+        }
     };
-    reader.readAsText(file);
+    primaryReader.readAsText(primaryFile);
 }
 
 function setupUndoRedoListeners() {
@@ -121,7 +189,11 @@ function updateFilenameDisplay() {
     const filenameEl = document.getElementById('filename');
 
     if (appState.filename) {
-        filenameEl.textContent = appState.filename;
+        let displayName = appState.filename;
+        if (appState.secondaryFilename) {
+            displayName += ` + ${appState.secondaryFilename}`;
+        }
+        filenameEl.textContent = displayName;
         currentFileEl.style.display = 'block';
     } else {
         currentFileEl.style.display = 'none';
@@ -132,11 +204,18 @@ function resetApp() {
     if (confirm('Are you sure you want to start over? Unsaved progress will be lost.')) {
         appState = {
             filename: '',
+            secondaryFilename: null,
             subtitles: [],
             characters: [],
             topCharacters: [],
-            sceneBreaks: []
+            sceneBreaks: [],
+            hasSecondaryTrack: false,
+            secondarySubtitles: []
         };
+
+        // Clear file references
+        primaryFile = null;
+        secondaryFile = null;
 
         // Clear undo/redo stacks
         undoStack = [];
@@ -147,5 +226,10 @@ function resetApp() {
         document.getElementById('characterManagement').style.display = 'none';
         document.getElementById('annotationWorkspace').style.display = 'none';
         document.getElementById('fileInput').value = '';
+        document.getElementById('secondaryFileInput').value = '';
+        document.getElementById('primaryFilename').textContent = '';
+        document.getElementById('secondaryFilename').textContent = '';
+        document.getElementById('clearSecondaryBtn').style.display = 'none';
+        document.getElementById('processBothFilesBtn').style.display = 'none';
     }
 }

@@ -4,13 +4,18 @@ function deepCopyState() {
     // Deep copy the appState for undo/redo
     return {
         filename: appState.filename,
+        secondaryFilename: appState.secondaryFilename || null,
         subtitles: appState.subtitles.map(sub => ({...sub})),
         characters: appState.characters.map(char => ({
             ...char,
             aliases: char.aliases ? [...char.aliases] : []
         })),
         topCharacters: [...appState.topCharacters],
-        sceneBreaks: appState.sceneBreaks ? [...appState.sceneBreaks] : []
+        sceneBreaks: appState.sceneBreaks ? [...appState.sceneBreaks] : [],
+        hasSecondaryTrack: appState.hasSecondaryTrack || false,
+        secondarySubtitles: appState.secondarySubtitles
+            ? appState.secondarySubtitles.map(sub => ({...sub}))
+            : []
     };
 }
 

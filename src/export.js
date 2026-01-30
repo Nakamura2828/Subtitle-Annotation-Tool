@@ -83,8 +83,13 @@ function exportJSON() {
             const entry = {
                 timestamp: sub.timestamp,
                 character: characterName,
-                dialogue: sub.text
+                dialogue: stripASSCodes(sub.text)
             };
+
+            // Add secondary text if dual-track mode (v1.6)
+            if (appState.hasSecondaryTrack && sub.secondaryText) {
+                entry.secondaryDialogue = stripASSCodes(sub.secondaryText);
+            }
 
             // Add line to appropriate scene
             if (!scenesMap.has(sceneId)) {
@@ -111,11 +116,18 @@ function exportJSON() {
                 }
             }
 
-            return {
+            const entry = {
                 timestamp: sub.timestamp,
                 character: characterName,
-                dialogue: sub.text
+                dialogue: stripASSCodes(sub.text)
             };
+
+            // Add secondary text if dual-track mode (v1.6)
+            if (appState.hasSecondaryTrack && sub.secondaryText) {
+                entry.secondaryDialogue = stripASSCodes(sub.secondaryText);
+            }
+
+            return entry;
         });
     }
 
@@ -157,11 +169,17 @@ function exportCSV() {
 
     // Build CSV with header row
     const csvRows = [];
+    let header;
     if (hasScenes) {
-        csvRows.push('scene,timestamp,character,dialogue');
+        header = 'scene,timestamp,character,dialogue';
     } else {
-        csvRows.push('timestamp,character,dialogue');
+        header = 'timestamp,character,dialogue';
     }
+    // Add secondary dialogue column if dual-track mode (v1.6)
+    if (appState.hasSecondaryTrack) {
+        header += ',secondaryDialogue';
+    }
+    csvRows.push(header);
 
     // Add data rows
     dataToExport.forEach(sub => {
@@ -176,15 +194,24 @@ function exportCSV() {
 
         const timestamp = escapeCSV(sub.timestamp);
         const character = escapeCSV(characterName);
-        const dialogue = escapeCSV(sub.text);
+        const dialogue = escapeCSV(stripASSCodes(sub.text));
+        const secondaryDialogue = appState.hasSecondaryTrack ? escapeCSV(stripASSCodes(sub.secondaryText) || '') : '';
 
+        let row;
         if (hasScenes) {
             const lineIndex = appState.subtitles.indexOf(sub);
             const sceneId = getSceneId(lineIndex);
-            csvRows.push(`${sceneId},${timestamp},${character},${dialogue}`);
+            row = `${sceneId},${timestamp},${character},${dialogue}`;
         } else {
-            csvRows.push(`${timestamp},${character},${dialogue}`);
+            row = `${timestamp},${character},${dialogue}`;
         }
+
+        // Append secondary dialogue if dual-track mode (v1.6)
+        if (appState.hasSecondaryTrack) {
+            row += `,${secondaryDialogue}`;
+        }
+
+        csvRows.push(row);
     });
 
     // Add UTF-8 BOM to ensure Excel properly detects encoding (especially on non-English locales)
@@ -266,13 +293,19 @@ function exportTXT() {
         }
 
         // Determine whether to include character name
+        const cleanText = stripASSCodes(sub.text);
         let dialogueLine;
         if (suppressRepeated && !characterChanged && !sceneChanged && previousCharacter !== null) {
             // Suppress character name for consecutive lines from same character in same scene
-            dialogueLine = sub.text;
+            dialogueLine = cleanText;
         } else {
             // Include character name (first line, character changed, or scene changed)
-            dialogueLine = `${characterName}: ${sub.text}`;
+            dialogueLine = `${characterName}: ${cleanText}`;
+        }
+
+        // Add secondary dialogue if dual-track mode (v1.6)
+        if (appState.hasSecondaryTrack && sub.secondaryText) {
+            dialogueLine += `\n[Secondary] ${stripASSCodes(sub.secondaryText)}`;
         }
 
         // Add appropriate spacing

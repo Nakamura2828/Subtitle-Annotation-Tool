@@ -261,15 +261,56 @@ function renderSubtitleList() {
         });
         select.addEventListener('change', (e) => assignCharacter(idx, e.target.value));
 
+        // Build HTML based on whether secondary track is loaded
+        let textHTML;
+        const displayText = stripASSCodes(sub.text);
+        if (appState.hasSecondaryTrack) {
+            // Two-column layout for dual-language
+            const displaySecondary = stripASSCodes(sub.secondaryText) || '';
+            textHTML = `
+                <div class="entry-text-dual">
+                    <div class="entry-text-primary">
+                        <div class="text-label">Primary</div>
+                        <div class="text-content">${displayText}</div>
+                        <button class="link-secondary-btn" onclick="showLinkSecondaryModal(${idx}); event.stopPropagation();">Link...</button>
+                    </div>
+                    <div class="entry-text-secondary">
+                        <div class="text-label">Secondary</div>
+                        <div class="text-content editable" contenteditable="true" data-index="${idx}">${displaySecondary}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Single column for primary only
+            textHTML = `<div class="entry-text">${displayText}</div>`;
+        }
+
         entry.innerHTML = `
             <div class="entry-index">#${sub.index + 1}</div>
             <div class="entry-timestamp">${sub.timestamp}</div>
-            <div class="entry-text">${sub.text}</div>
+            ${textHTML}
             <div class="entry-character"></div>
             <div class="entry-status">${sub.character ? '✓' : ''}</div>
         `;
 
         entry.querySelector('.entry-character').appendChild(select);
+
+        // Add event listener for secondary text editing (if dual-track mode)
+        if (appState.hasSecondaryTrack) {
+            const editableDiv = entry.querySelector('.text-content.editable');
+            if (editableDiv) {
+                editableDiv.addEventListener('blur', (e) => {
+                    updateSecondaryText(idx, e.target.textContent);
+                });
+                // Prevent Enter key from creating new lines (optional)
+                editableDiv.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        e.target.blur(); // Save on Enter
+                    }
+                });
+            }
+        }
 
         // Make entry clickable to set as active
         entry.addEventListener('click', (e) => {
@@ -468,6 +509,195 @@ function assignCharacter(index, character) {
             select.value = character || '';
         }
     }
+}
+
+function updateSecondaryText(index, newText) {
+    // Save state for undo
+    saveStateForUndo();
+
+    // Update the secondary text (allow empty string to be saved as null)
+    appState.subtitles[index].secondaryText = newText.trim() || null;
+
+    saveToLocalStorage();
+}
+
+// --- Link Secondary Modal (v1.6.1) ---
+
+// Track which primary line is being linked
+let linkingPrimaryIndex = null;
+
+function showLinkSecondaryModal(primaryIndex) {
+    linkingPrimaryIndex = primaryIndex;
+    const primary = appState.subtitles[primaryIndex];
+
+    // Show primary line info
+    document.getElementById('linkSecondaryInfo').textContent =
+        `Primary line #${primary.index + 1}`;
+    document.getElementById('linkPrimaryText').textContent =
+        stripASSCodes(primary.text);
+
+    // Populate secondary lines list
+    const listContainer = document.getElementById('secondaryLineList');
+    listContainer.innerHTML = '';
+
+    const linkedIndices = primary.secondaryIndices || [];
+
+    appState.secondarySubtitles.forEach((sec, secIdx) => {
+        const item = document.createElement('div');
+        item.className = 'secondary-line-item';
+
+        // Check if this secondary line is currently linked to the primary
+        const isLinked = linkedIndices.includes(secIdx);
+
+        if (isLinked) {
+            item.classList.add('selected');
+        }
+
+        const displayText = stripASSCodes(sec.text);
+
+        item.innerHTML = `
+            <input type="checkbox" data-sec-index="${secIdx}" ${isLinked ? 'checked' : ''}>
+            <span class="secondary-line-timestamp">${sec.timestamp}</span>
+            <span class="secondary-line-text">${displayText}</span>
+        `;
+
+        // Toggle selection on click
+        item.addEventListener('click', (e) => {
+            if (e.target.tagName === 'INPUT') {
+                // Checkbox clicked directly - update visual state
+                item.classList.toggle('selected', e.target.checked);
+            } else {
+                // Clicked elsewhere on the row - toggle checkbox
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                item.classList.toggle('selected', checkbox.checked);
+            }
+        });
+
+        listContainer.appendChild(item);
+    });
+
+    // Scroll to the approximate matching region
+    scrollToMatchingRegion(listContainer, primary);
+
+    document.getElementById('linkSecondaryModal').classList.add('show');
+}
+
+function scrollToMatchingRegion(listContainer, primary) {
+    // Try to scroll to the region of secondary lines near the primary's timestamp
+    const primaryTime = parseTimestamp(primary.timestamp);
+    if (!primaryTime) return;
+
+    let bestIdx = 0;
+    let bestDiff = Infinity;
+
+    appState.secondarySubtitles.forEach((sec, idx) => {
+        const secTime = parseTimestamp(sec.timestamp);
+        if (secTime) {
+            const diff = Math.abs(secTime.start - primaryTime.start);
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                bestIdx = idx;
+            }
+        }
+    });
+
+    // Scroll to the best matching item (with some offset to show context)
+    const items = listContainer.querySelectorAll('.secondary-line-item');
+    const targetIdx = Math.max(0, bestIdx - 2);
+    if (items[targetIdx]) {
+        items[targetIdx].scrollIntoView({ block: 'start' });
+    }
+}
+
+function clearLinkSelection() {
+    const checkboxes = document.querySelectorAll('#secondaryLineList input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        cb.closest('.secondary-line-item').classList.remove('selected');
+    });
+}
+
+function confirmLinkSecondary() {
+    if (linkingPrimaryIndex === null) return;
+
+    saveStateForUndo();
+
+    // Gather selected secondary lines
+    const checkedBoxes = document.querySelectorAll('#secondaryLineList input[type="checkbox"]:checked');
+    const selectedIndices = [];
+    const selectedTexts = [];
+
+    checkedBoxes.forEach(cb => {
+        const secIdx = parseInt(cb.dataset.secIndex);
+        selectedIndices.push(secIdx);
+        selectedTexts.push(appState.secondarySubtitles[secIdx].text);
+    });
+
+    // Update the primary line's secondary text and index tracking
+    const sub = appState.subtitles[linkingPrimaryIndex];
+    sub.secondaryText = selectedTexts.length > 0 ? selectedTexts.join('\n') : null;
+    sub.secondaryIndices = selectedIndices;
+
+    saveToLocalStorage();
+    closeLinkSecondaryModal();
+    renderSubtitleList();
+}
+
+function closeLinkSecondaryModal() {
+    linkingPrimaryIndex = null;
+    document.getElementById('linkSecondaryModal').classList.remove('show');
+}
+
+function shiftSecondaryBelow(direction) {
+    if (linkingPrimaryIndex === null) return;
+
+    saveStateForUndo();
+
+    const start = linkingPrimaryIndex;
+    const subs = appState.subtitles;
+
+    if (direction === 1) {
+        // Shift down: each primary line gets the mapping from the line above it.
+        // Work backwards to avoid overwriting source data.
+        // Find the last primary line that has a mapping (no point shifting beyond that).
+        let lastMapped = subs.length - 1;
+        while (lastMapped >= start && (!subs[lastMapped].secondaryIndices || subs[lastMapped].secondaryIndices.length === 0)) {
+            lastMapped--;
+        }
+        // Shift from lastMapped+1 down to start (backwards)
+        for (let i = Math.min(lastMapped + 1, subs.length - 1); i >= start; i--) {
+            if (i === start) {
+                // Current line becomes unmapped
+                subs[i].secondaryIndices = [];
+                subs[i].secondaryText = null;
+            } else {
+                // Take mapping from the line above
+                const source = subs[i - 1];
+                subs[i].secondaryIndices = source.secondaryIndices ? [...source.secondaryIndices] : [];
+                subs[i].secondaryText = source.secondaryText;
+            }
+        }
+    } else {
+        // Shift up: each primary line gets the mapping from the line below it.
+        // Work forwards to avoid overwriting source data.
+        for (let i = start; i < subs.length; i++) {
+            if (i === subs.length - 1) {
+                // Last line has nothing below it - becomes unmapped
+                subs[i].secondaryIndices = [];
+                subs[i].secondaryText = null;
+            } else {
+                // Take mapping from the line below
+                const source = subs[i + 1];
+                subs[i].secondaryIndices = source.secondaryIndices ? [...source.secondaryIndices] : [];
+                subs[i].secondaryText = source.secondaryText;
+            }
+        }
+    }
+
+    saveToLocalStorage();
+    closeLinkSecondaryModal();
+    renderSubtitleList();
 }
 
 function updateProgress() {

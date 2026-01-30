@@ -17,10 +17,31 @@
         <!-- File Upload Section -->
         <div class="upload-section" id="uploadSection">
             <div class="upload-zone" id="uploadZone">
-                <h2>📁 Load Subtitle File</h2>
-                <p>Drag and drop a .srt or .ass file here, or click to browse</p>
-                <input type="file" id="fileInput" accept=".srt,.ass">
-                <button class="btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+                <h2>📁 Load Subtitle Files</h2>
+                <p style="margin-bottom: 20px;">Load primary file (required) and optional secondary file for dual-language annotation</p>
+
+                <!-- Primary File -->
+                <div style="margin-bottom: 15px; padding: 15px; background: rgba(52, 152, 219, 0.05); border-radius: 4px; border: 1px solid rgba(52, 152, 219, 0.2);">
+                    <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #2c3e50;">Primary File (Required)</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #7f8c8d;">This file will be annotated with character names</p>
+                    <input type="file" id="fileInput" accept=".srt,.ass" style="display: none;">
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">Choose Primary File</button>
+                    <span id="primaryFilename" style="margin-left: 10px; font-weight: 600; color: #27ae60;"></span>
+                </div>
+
+                <!-- Secondary File (Optional) -->
+                <div style="padding: 15px; background: rgba(149, 165, 166, 0.05); border-radius: 4px; border: 1px solid rgba(149, 165, 166, 0.2);">
+                    <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #2c3e50;">Secondary File (Optional)</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #7f8c8d;">Reference language (e.g., Japanese) shown alongside primary for context</p>
+                    <input type="file" id="secondaryFileInput" accept=".srt,.ass" style="display: none;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('secondaryFileInput').click()">Choose Secondary File</button>
+                    <span id="secondaryFilename" style="margin-left: 10px; font-weight: 600; color: #27ae60;"></span>
+                    <button class="btn btn-danger" id="clearSecondaryBtn" onclick="clearSecondaryFile()" style="margin-left: 10px; display: none;">Clear</button>
+                </div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-success" id="processBothFilesBtn" onclick="processBothFiles()" style="display: none;">Continue</button>
+                </div>
             </div>
         </div>
 
@@ -176,6 +197,42 @@
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="closeMergeModal()">Cancel</button>
                 <button class="btn btn-success" onclick="confirmMerge()">Merge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link Secondary Modal (v1.6.1) -->
+    <div class="modal" id="linkSecondaryModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h3>Link Secondary Line</h3>
+            <p id="linkSecondaryInfo" style="margin-bottom: 15px; color: #6c757d;"></p>
+
+            <div style="margin-bottom: 15px; padding: 10px; background: rgba(52, 152, 219, 0.05); border: 1px solid rgba(52, 152, 219, 0.2); border-radius: 4px;">
+                <strong>Primary line:</strong>
+                <div id="linkPrimaryText" style="margin-top: 5px;"></div>
+            </div>
+
+            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <strong>Select secondary line(s):</strong>
+                <button class="btn btn-secondary" onclick="clearLinkSelection()" style="padding: 4px 12px; font-size: 13px;">Clear Selection</button>
+            </div>
+
+            <div id="secondaryLineList" class="secondary-line-list">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                <strong>Shift All Below This Point:</strong>
+                <p style="font-size: 13px; color: #6c757d; margin: 5px 0;">Re-align all lines from here onward by shifting secondary associations</p>
+                <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    <button class="btn" onclick="shiftSecondaryBelow(-1)" style="padding: 6px 16px; font-size: 14px;">Shift Up (-1)</button>
+                    <button class="btn" onclick="shiftSecondaryBelow(1)" style="padding: 6px 16px; font-size: 14px;">Shift Down (+1)</button>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeLinkSecondaryModal()">Cancel</button>
+                <button class="btn btn-success" onclick="confirmLinkSecondary()">Apply</button>
             </div>
         </div>
     </div>
