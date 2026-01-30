@@ -46,6 +46,7 @@ loras/
 *.key
 secrets.json
 CLAUDE.md
+CHANGELOG.md
 nextprompt.txt
 
 # Distribution
