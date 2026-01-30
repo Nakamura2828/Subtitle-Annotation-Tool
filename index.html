@@ -322,8 +322,33 @@
         }
 
         .subtitle-entry.active {
-            border-left: 5px solid #f39c12;
-            background-color: #fff3cd;
+            border-left: 4px solid #ff6b00;
+            box-shadow: 0 0 0 2px #ff6b00 inset;
+        }
+
+        /* Scene break divider */
+        .scene-break {
+            margin: 30px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .scene-break hr {
+            border: none;
+            border-top: 2px solid #3498db;
+            margin: 0;
+        }
+
+        .scene-break span {
+            background-color: #f5f5f5;
+            padding: 0 15px;
+            color: #3498db;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            top: -10px;
         }
 
         .entry-index {
@@ -475,6 +500,15 @@
                 <div class="shortcuts" id="shortcutHints"></div>
             </div>
 
+            <div style="margin: 15px 0; padding: 12px; background-color: #e8f4f8; border: 1px solid #3498db; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 14px; color: #2c3e50;">
+                    <strong>Scene Management:</strong> Click on a line to make it active, then insert a scene break below it. Press ESC to clear selection.
+                </span>
+                <button class="btn" onclick="insertSceneBreak()" style="background-color: #3498db; color: white;">
+                    Insert Scene Break (Alt+N)
+                </button>
+            </div>
+
             <div class="subtitle-list" id="subtitleList"></div>
 
             <div class="export-section">
@@ -569,7 +603,8 @@
             filename: '',
             subtitles: [],
             characters: [],
-            topCharacters: []
+            topCharacters: [],
+            sceneBreaks: [] // Array of line indices where scene breaks occur
         };
 
         // UI state for expandable alias sections (not persisted)
@@ -646,6 +681,12 @@
                     const loadSaved = confirm(`Found a saved session for "${file.name}". Would you like to restore your progress?`);
                     if (loadSaved) {
                         appState = JSON.parse(savedSession);
+
+                        // Data migration: Initialize sceneBreaks if missing (for older saved sessions)
+                        if (!appState.sceneBreaks) {
+                            appState.sceneBreaks = [];
+                        }
+
                         updateFilenameDisplay();
                         showCharacterManagement();
                         return;
@@ -1690,6 +1731,8 @@
             hints.push('<div class="shortcut"><span class="key">0</span> (Other)</div>');
             hints.push('<div class="shortcut"><span class="key">S</span> Jump to first unannotated</div>');
             hints.push('<div class="shortcut"><span class="key">J/K</span> Navigate up/down</div>');
+            hints.push('<div class="shortcut"><span class="key">ESC</span> Clear selection</div>');
+            hints.push('<div class="shortcut"><span class="key">Alt+N</span> Insert scene break</div>');
             hints.push('<div class="shortcut"><span class="key">Ctrl+Z</span> Undo</div>');
             hints.push('<div class="shortcut"><span class="key">Ctrl+Y</span> Redo</div>');
             container.innerHTML = hints.join('');
@@ -1698,6 +1741,14 @@
         function renderSubtitleList() {
             const container = document.getElementById('subtitleList');
             container.innerHTML = '';
+
+            // Add click handler to container for clearing active selection
+            container.onclick = (e) => {
+                // Clear if clicking on container or scene-break divider (not on subtitle entries)
+                if (e.target === container || e.target.closest('.scene-break')) {
+                    clearActiveSelection();
+                }
+            };
 
             // Apply filter
             let filteredSubtitles = appState.subtitles;
@@ -1744,7 +1795,32 @@
                 `;
 
                 entry.querySelector('.entry-character').appendChild(select);
+
+                // Make entry clickable to set as active
+                entry.addEventListener('click', (e) => {
+                    // Don't interfere with dropdown interaction
+                    if (e.target.tagName === 'SELECT' || e.target.closest('.entry-character')) {
+                        return;
+                    }
+
+                    // Remove active class from all entries
+                    document.querySelectorAll('.subtitle-entry').forEach(el => {
+                        el.classList.remove('active');
+                    });
+
+                    // Add active class to clicked entry
+                    entry.classList.add('active');
+                });
+
                 container.appendChild(entry);
+
+                // Check if there's a scene break after this line
+                if (appState.sceneBreaks && appState.sceneBreaks.includes(idx)) {
+                    const sceneBreakDiv = document.createElement('div');
+                    sceneBreakDiv.className = 'scene-break';
+                    sceneBreakDiv.innerHTML = '<hr><span>Scene Break</span>';
+                    container.appendChild(sceneBreakDiv);
+                }
             });
 
             // Add keyboard listener (remove first to prevent duplicates)
@@ -1757,6 +1833,13 @@
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
             const key = e.key.toLowerCase();
+
+            // Check for ESC key - clear active selection
+            if (key === 'escape') {
+                e.preventDefault();
+                clearActiveSelection();
+                return;
+            }
 
             // Check for '0' key - always assign (Other)
             if (key === '0') {
@@ -1792,6 +1875,13 @@
             if (key === 'k' || key === 'arrowup') {
                 e.preventDefault();
                 navigateLines(-1);
+                return;
+            }
+
+            // Check for Alt+N - insert scene break
+            if (e.altKey && key === 'n') {
+                e.preventDefault();
+                insertSceneBreak();
                 return;
             }
         }
@@ -1854,6 +1944,13 @@
             }
         }
 
+        function clearActiveSelection() {
+            // Remove active class from all subtitle entries
+            document.querySelectorAll('.subtitle-entry').forEach(entry => {
+                entry.classList.remove('active');
+            });
+        }
+
         function assignCharacter(index, character) {
             // Save state for undo
             saveStateForUndo();
@@ -1880,6 +1977,44 @@
                     select.value = character || '';
                 }
             }
+        }
+
+        function insertSceneBreak() {
+            // Find the currently active line
+            const activeEntry = document.querySelector('.subtitle-entry.active');
+            if (!activeEntry) {
+                alert('Please select a line first by clicking on it or using J/K navigation.');
+                return;
+            }
+
+            const index = parseInt(activeEntry.dataset.index);
+
+            // Check if scene break already exists at this position
+            if (appState.sceneBreaks.includes(index)) {
+                alert('A scene break already exists after this line.');
+                return;
+            }
+
+            // Check if this is the last line
+            if (index >= appState.subtitles.length - 1) {
+                alert('Cannot insert scene break after the last line.');
+                return;
+            }
+
+            // Save state for undo
+            saveStateForUndo();
+
+            // Add scene break and keep array sorted
+            appState.sceneBreaks.push(index);
+            appState.sceneBreaks.sort((a, b) => a - b);
+
+            // Save to localStorage
+            saveToLocalStorage();
+
+            // Re-render to show the scene break
+            renderSubtitleList();
+
+            console.log(`Scene break inserted after line #${index + 1}`);
         }
 
         function updateProgress() {
@@ -1927,7 +2062,8 @@
                     ...char,
                     aliases: char.aliases ? [...char.aliases] : []
                 })),
-                topCharacters: [...appState.topCharacters]
+                topCharacters: [...appState.topCharacters],
+                sceneBreaks: appState.sceneBreaks ? [...appState.sceneBreaks] : []
             };
         }
 
@@ -2037,6 +2173,22 @@
             }
         }
 
+        // Helper function to calculate scene ID for a given line index
+        function getSceneId(lineIndex) {
+            if (!appState.sceneBreaks || appState.sceneBreaks.length === 0) {
+                return null; // No scenes defined
+            }
+
+            let sceneId = 1;
+            for (let i = 0; i < appState.sceneBreaks.length; i++) {
+                if (lineIndex <= appState.sceneBreaks[i]) {
+                    return sceneId;
+                }
+                sceneId++;
+            }
+            return sceneId; // Line is after the last scene break
+        }
+
         function showExportModal() {
             document.getElementById('exportModal').classList.add('show');
 
@@ -2080,22 +2232,67 @@
                 dataToExport = appState.subtitles.filter(s => s.character);
             }
 
-            const jsonData = dataToExport.map(sub => {
-                // Use canonical name for export
-                let characterName = sub.character || null;
-                if (characterName) {
-                    const charObj = appState.characters.find(c => c.name === characterName);
-                    if (charObj && charObj.canonicalName) {
-                        characterName = charObj.canonicalName;
-                    }
-                }
+            // Check if scenes are defined
+            const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
 
-                return {
-                    timestamp: sub.timestamp,
-                    character: characterName,
-                    dialogue: sub.text
-                };
-            });
+            let jsonData;
+
+            if (hasScenes) {
+                // Hierarchical structure: scenes as top-level objects with nested lines
+                const scenesMap = new Map(); // Map<sceneId, lines[]>
+
+                dataToExport.forEach(sub => {
+                    // Use canonical name for export
+                    let characterName = sub.character || null;
+                    if (characterName) {
+                        const charObj = appState.characters.find(c => c.name === characterName);
+                        if (charObj && charObj.canonicalName) {
+                            characterName = charObj.canonicalName;
+                        }
+                    }
+
+                    // Calculate scene ID
+                    const lineIndex = appState.subtitles.indexOf(sub);
+                    const sceneId = getSceneId(lineIndex);
+
+                    const entry = {
+                        timestamp: sub.timestamp,
+                        character: characterName,
+                        dialogue: sub.text
+                    };
+
+                    // Add line to appropriate scene
+                    if (!scenesMap.has(sceneId)) {
+                        scenesMap.set(sceneId, []);
+                    }
+                    scenesMap.get(sceneId).push(entry);
+                });
+
+                // Convert map to array of scene objects
+                jsonData = Array.from(scenesMap.entries()).map(([sceneId, lines]) => ({
+                    sceneId: sceneId,
+                    lines: lines
+                }));
+
+            } else {
+                // Flat structure: backwards compatibility when no scenes
+                jsonData = dataToExport.map(sub => {
+                    // Use canonical name for export
+                    let characterName = sub.character || null;
+                    if (characterName) {
+                        const charObj = appState.characters.find(c => c.name === characterName);
+                        if (charObj && charObj.canonicalName) {
+                            characterName = charObj.canonicalName;
+                        }
+                    }
+
+                    return {
+                        timestamp: sub.timestamp,
+                        character: characterName,
+                        dialogue: sub.text
+                    };
+                });
+            }
 
             const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -2116,9 +2313,16 @@
                 dataToExport = appState.subtitles.filter(s => s.character);
             }
 
+            // Check if scenes are defined
+            const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
+
             // Build CSV with header row
             const csvRows = [];
-            csvRows.push('timestamp,character,dialogue');
+            if (hasScenes) {
+                csvRows.push('scene,timestamp,character,dialogue');
+            } else {
+                csvRows.push('timestamp,character,dialogue');
+            }
 
             // Add data rows
             dataToExport.forEach(sub => {
@@ -2134,7 +2338,14 @@
                 const timestamp = escapeCSV(sub.timestamp);
                 const character = escapeCSV(characterName);
                 const dialogue = escapeCSV(sub.text);
-                csvRows.push(`${timestamp},${character},${dialogue}`);
+
+                if (hasScenes) {
+                    const lineIndex = appState.subtitles.indexOf(sub);
+                    const sceneId = getSceneId(lineIndex);
+                    csvRows.push(`${sceneId},${timestamp},${character},${dialogue}`);
+                } else {
+                    csvRows.push(`${timestamp},${character},${dialogue}`);
+                }
             });
 
             // Add UTF-8 BOM to ensure Excel properly detects encoding (especially on non-English locales)
@@ -2163,6 +2374,8 @@
             // Build dialogue text in screenplay format
             const lines = [];
             let previousCharacter = null;
+            let previousSceneId = null;
+            const hasScenes = appState.sceneBreaks && appState.sceneBreaks.length > 0;
 
             dataToExport.forEach(sub => {
                 // Use canonical name for export
@@ -2174,21 +2387,47 @@
                     }
                 }
 
+                // Calculate scene ID if scenes are defined
+                let currentSceneId = null;
+                if (hasScenes) {
+                    const lineIndex = appState.subtitles.indexOf(sub);
+                    currentSceneId = getSceneId(lineIndex);
+                }
+
                 const characterChanged = previousCharacter !== characterName;
+                const sceneChanged = hasScenes && previousSceneId !== null && currentSceneId !== previousSceneId;
+
+                // Insert scene marker for Scene 1 at the very beginning
+                if (hasScenes && previousCharacter === null) {
+                    lines.push('--- Scene 1 ---');
+                    lines.push(''); // Empty line after scene marker
+                }
+
+                // Insert scene marker if scene changed
+                if (sceneChanged) {
+                    if (lines.length > 0) {
+                        lines.push(''); // Empty line before scene marker
+                    }
+                    lines.push(`--- Scene ${currentSceneId} ---`);
+                    lines.push(''); // Empty line after scene marker
+                }
 
                 // Determine whether to include character name
                 let dialogueLine;
-                if (suppressRepeated && !characterChanged && previousCharacter !== null) {
-                    // Suppress character name for consecutive lines from same character
+                if (suppressRepeated && !characterChanged && !sceneChanged && previousCharacter !== null) {
+                    // Suppress character name for consecutive lines from same character in same scene
                     dialogueLine = sub.text;
                 } else {
-                    // Include character name (first line or character changed)
+                    // Include character name (first line, character changed, or scene changed)
                     dialogueLine = `${characterName}: ${sub.text}`;
                 }
 
                 // Add appropriate spacing
                 if (previousCharacter === null) {
                     // First line - no spacing before
+                    lines.push(dialogueLine);
+                } else if (sceneChanged) {
+                    // Scene changed - marker already added with spacing
                     lines.push(dialogueLine);
                 } else if (characterChanged) {
                     // Different character - add empty line (double newline)
@@ -2200,6 +2439,7 @@
                 }
 
                 previousCharacter = characterName;
+                previousSceneId = currentSceneId;
             });
 
             // Join all lines with single newlines (the empty strings create double newlines)
@@ -2252,7 +2492,8 @@
                     filename: '',
                     subtitles: [],
                     characters: [],
-                    topCharacters: []
+                    topCharacters: [],
+                    sceneBreaks: []
                 };
 
                 // Clear undo/redo stacks
