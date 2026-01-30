@@ -136,6 +136,42 @@ function isNonCharacterName(name) {
     });
 }
 
+// Detect dual-language styles in an ASS file
+// Returns { primary: styleName, secondary: styleName } or null if not dual-language
+function detectDualLanguageStyles(content) {
+    const lines = content.split('\n');
+    const styleNames = [];
+
+    let inStyles = false;
+    for (const line of lines) {
+        if (line.includes('[V4+ Styles]') || line.includes('[V4 Styles]')) {
+            inStyles = true;
+            continue;
+        }
+        if (inStyles && line.startsWith('[')) break; // Next section
+        if (inStyles && line.startsWith('Style:')) {
+            const name = line.substring(6).split(',')[0].trim();
+            styleNames.push(name);
+        }
+    }
+
+    // Look for language-suffixed variants of dialogue styles
+    // Pattern: "StyleName" + "StyleName-xx" where xx is a language code
+    const langSuffixPattern = /^(.+)-(ja|en|zh|ko|fr|de|es|pt|it|ru)$/i;
+    for (const style of styleNames) {
+        const match = style.match(langSuffixPattern);
+        if (match) {
+            const baseStyle = match[1];
+            if (styleNames.includes(baseStyle)) {
+                // Found a pair: baseStyle + baseStyle-lang
+                return { primary: baseStyle, secondary: style };
+            }
+        }
+    }
+
+    return null;
+}
+
 // Strip ASS override tags from text (e.g., {\fad(150,255)}, {\be2}, {\pos(320,50)})
 function stripASSCodes(text) {
     if (!text) return text;

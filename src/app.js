@@ -110,11 +110,38 @@ function processBothFiles() {
             }
         }
 
+        // Check for dual-language ASS (single file with two language styles)
+        let dualLanguage = null;
+        if (primaryExtension === 'ass' && !secondaryFile) {
+            dualLanguage = detectDualLanguageStyles(primaryContent);
+        }
+
         // Parse primary file
         if (primaryExtension === 'srt') {
             appState.subtitles = parseSRT(primaryContent);
         } else if (primaryExtension === 'ass') {
-            appState.subtitles = parseASS(primaryContent);
+            if (dualLanguage) {
+                // Parse only the primary language style
+                appState.subtitles = parseASS(primaryContent, [dualLanguage.primary]);
+            } else {
+                appState.subtitles = parseASS(primaryContent);
+            }
+        }
+
+        // Handle dual-language ASS: extract secondary track from same file
+        if (dualLanguage) {
+            const secondarySubtitles = parseASS(primaryContent, [dualLanguage.secondary]);
+            appState.secondarySubtitles = secondarySubtitles;
+            appState.hasSecondaryTrack = true;
+            appState.secondaryFilename = `[${dualLanguage.secondary}]`;
+            updateFilenameDisplay();
+
+            // Align secondary to primary
+            appState.subtitles = alignSubtitles(appState.subtitles, secondarySubtitles);
+
+            extractCharacters();
+            showCharacterManagement();
+            return;
         }
 
         // If secondary file provided, read and align it
