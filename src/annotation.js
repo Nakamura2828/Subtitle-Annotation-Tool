@@ -273,7 +273,7 @@ function renderSubtitleList() {
                 <div class="entry-text-dual">
                     <div class="entry-text-primary">
                         <div class="text-label">Primary</div>
-                        <div class="text-content">${displayText}</div>
+                        <div class="text-content editable-primary" contenteditable="true" data-index="${idx}">${displayText}</div>
                         <button class="link-secondary-btn" onclick="showLinkSecondaryModal(${idx}); event.stopPropagation();">Link...</button>
                     </div>
                     <div class="entry-text-secondary">
@@ -284,7 +284,7 @@ function renderSubtitleList() {
             `;
         } else {
             // Single column for primary only
-            textHTML = `<div class="entry-text">${displayText}</div>`;
+            textHTML = `<div class="entry-text editable-primary" contenteditable="true" data-index="${idx}">${displayText}</div>`;
         }
 
         entry.innerHTML = `
@@ -296,6 +296,20 @@ function renderSubtitleList() {
         `;
 
         entry.querySelector('.entry-character').appendChild(select);
+
+        // Add event listener for primary text editing
+        const editablePrimary = entry.querySelector('.editable-primary');
+        if (editablePrimary) {
+            editablePrimary.addEventListener('blur', (e) => {
+                updatePrimaryText(idx, e.target.textContent);
+            });
+            editablePrimary.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            });
+        }
 
         // Add event listener for secondary text editing (if dual-track mode)
         if (appState.hasSecondaryTrack) {
@@ -525,6 +539,16 @@ function assignCharacter(index, character) {
             select.value = character || '';
         }
     }
+}
+
+function updatePrimaryText(index, newText) {
+    const trimmed = newText.trim();
+    // Only save if the text actually changed
+    if (trimmed === stripASSCodes(appState.subtitles[index].text)) return;
+
+    saveStateForUndo();
+    appState.subtitles[index].text = trimmed;
+    saveToLocalStorage();
 }
 
 function updateSecondaryText(index, newText) {
